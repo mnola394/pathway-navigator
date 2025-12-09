@@ -12,9 +12,9 @@ import { useNavigation, Page } from "@/contexts/NavigationContext";
 const navItems: { id: Page; label: string; icon: React.ElementType }[] = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
   { id: "pathway", label: "Pathway Explorer", icon: Route },
-  { id: "reaction", label: "Reaction Explorer", icon: FlaskConical },
-  { id: "compound", label: "Compound Explorer", icon: Atom },
-  { id: "analytics", label: "Analytics", icon: BarChart3 },
+  // { id: "reaction", label: "Reaction Explorer", icon: FlaskConical },
+  // { id: "compound", label: "Compound Explorer", icon: Atom },
+  // { id: "analytics", label: "Analytics", icon: BarChart3 },
   { id: "about", label: "About / Help", icon: HelpCircle },
 ];
 

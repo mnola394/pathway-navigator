@@ -4,28 +4,37 @@
   xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
   xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
   xmlns:owl="http://www.w3.org/2002/07/owl#"
-  xmlns:xsd="http://www.w3.org/2001/XMLSchema#">
+  xmlns:xsd="http://www.w3.org/2001/XMLSchema#"
+  xmlns:schema="http://schema.org/"
+  xmlns:wd="http://www.wikidata.org/entity/">
 
   <owl:Ontology rdf:about="http://example.org/chemkg">
     <rdfs:label>Chemical Reaction Knowledge Graph (USPTO) Ontology</rdfs:label>
     <rdfs:comment>
       Core classes and properties for compounds, reactions, and roles (reactant/product/agent),
       plus an optional Participation pattern to capture role-as-data.
+      Connected to upper-level vocabularies via Schema.org and Wikidata.
     </rdfs:comment>
   </owl:Ontology>
 
 
   <owl:Class rdf:about="http://example.org/chemkg#Compound">
     <rdfs:label>Compound</rdfs:label>
+
+    <rdfs:subClassOf rdf:resource="http://schema.org/ChemicalSubstance"/>
+    <rdfs:subClassOf rdf:resource="http://schema.org/MolecularEntity"/>
+
     <owl:disjointWith rdf:resource="http://example.org/chemkg#Reaction"/>
     <owl:disjointWith rdf:resource="http://example.org/chemkg#Participation"/>
     <owl:disjointWith rdf:resource="http://example.org/chemkg#Role"/>
+
     <rdfs:subClassOf>
       <owl:Restriction>
         <owl:onProperty rdf:resource="http://example.org/chemkg#smiles"/>
         <owl:minCardinality rdf:datatype="http://www.w3.org/2001/XMLSchema#nonNegativeInteger">1</owl:minCardinality>
       </owl:Restriction>
     </rdfs:subClassOf>
+
     <owl:hasKey rdf:parseType="Collection">
       <rdf:Description rdf:about="http://example.org/chemkg#inchiKey"/>
     </owl:hasKey>
@@ -33,8 +42,12 @@
 
   <owl:Class rdf:about="http://example.org/chemkg#Reaction">
     <rdfs:label>Reaction</rdfs:label>
+
+    <rdfs:subClassOf rdf:resource="http://schema.org/Thing"/>
+
     <owl:disjointWith rdf:resource="http://example.org/chemkg#Participation"/>
     <owl:disjointWith rdf:resource="http://example.org/chemkg#Role"/>
+
     <rdfs:subClassOf>
       <owl:Restriction>
         <owl:onProperty rdf:resource="http://example.org/chemkg#hasReactant"/>
@@ -42,6 +55,7 @@
         <owl:onClass rdf:resource="http://example.org/chemkg#Compound"/>
       </owl:Restriction>
     </rdfs:subClassOf>
+
     <rdfs:subClassOf>
       <owl:Restriction>
         <owl:onProperty rdf:resource="http://example.org/chemkg#hasProduct"/>
@@ -49,6 +63,7 @@
         <owl:onClass rdf:resource="http://example.org/chemkg#Compound"/>
       </owl:Restriction>
     </rdfs:subClassOf>
+
     <owl:hasKey rdf:parseType="Collection">
       <rdf:Description rdf:about="http://example.org/chemkg#reactionId"/>
     </owl:hasKey>
@@ -85,6 +100,10 @@
 
   <owl:Class rdf:about="http://example.org/chemkg#Patent">
     <rdfs:label>Patent</rdfs:label>
+
+    <rdfs:subClassOf rdf:resource="http://schema.org/CreativeWork"/>
+
+    <rdfs:seeAlso rdf:resource="http://www.wikidata.org/entity/Q253623"/>
   </owl:Class>
 
 
@@ -186,6 +205,8 @@
     <rdfs:label>SMILES</rdfs:label>
     <rdfs:domain rdf:resource="http://example.org/chemkg#Compound"/>
     <rdfs:range  rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+
+    <owl:equivalentProperty rdf:resource="http://schema.org/smiles"/>
   </owl:DatatypeProperty>
 
   <owl:DatatypeProperty rdf:about="http://example.org/chemkg#inchiKey">
