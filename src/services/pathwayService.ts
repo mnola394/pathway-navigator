@@ -200,16 +200,7 @@ export async function getReactionParticipants(
   return rows;
 }
 
-/* ------------------------------------------------------------------ */
-/*  MULTI-SET DETAILED PATH QUERY                                     */
-/* ------------------------------------------------------------------ */
 
-/**
- * Build an N-step path query where:
- *  - first reaction (rxn1) must involve *all* `starts` as reactants
- *  - last  reaction (rxnN) must produce *all* `targets` as products
- *  - the chain in the middle is a standard reactant→product path
- */
 export const buildMultiSetPathQuery = (
   starts: string[],
   targets: string[],

@@ -204,7 +204,22 @@ export function Dashboard() {
           iconColor="text-primary"
         />
       </div>
-
+<Card>
+        <CardHeader>
+          <CardTitle className="text-base font-semibold flex items-center gap-2">
+            <TrendingUp className="w-4 h-4 text-primary" />
+            Top Solvents by Usage
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <BarChart data={solventChartData} colorClass="bg-solvent" />
+          {loadingSolvents && (
+            <p className="text-xs text-muted-foreground mt-2">
+              Loading solvent usage…
+            </p>
+          )}
+        </CardContent>
+      </Card>
       {/* Tables */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Recent Reactions */}
@@ -220,7 +235,7 @@ export function Dashboard() {
               <TableHeader>
                 <TableRow>
                   <TableHead className="text-xs">Reaction ID</TableHead>
-                  <TableHead className="text-xs">Year</TableHead>
+                  {/* <TableHead className="text-xs">Year</TableHead> */}
                   <TableHead className="text-xs">Reaction SMILES</TableHead>
                 </TableRow>
               </TableHeader>
@@ -230,9 +245,9 @@ export function Dashboard() {
                     <TableCell className="font-mono text-xs">
                       {reaction.reactionId ?? reaction.rxn}
                     </TableCell>
-                    <TableCell className="text-xs text-center">
+                    {/* <TableCell className="text-xs text-center">
                       {reaction.year ?? "—"}
-                    </TableCell>
+                    </TableCell> */}
                     <TableCell className="font-mono text-xs max-w-[200px] truncate">
                       {reaction.reactionSmiles || "—"}
                     </TableCell>
@@ -293,22 +308,7 @@ export function Dashboard() {
       </div>
 
       {/* Analytics Preview */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base font-semibold flex items-center gap-2">
-            <TrendingUp className="w-4 h-4 text-primary" />
-            Top Solvents by Usage
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <BarChart data={solventChartData} colorClass="bg-solvent" />
-          {loadingSolvents && (
-            <p className="text-xs text-muted-foreground mt-2">
-              Loading solvent usage…
-            </p>
-          )}
-        </CardContent>
-      </Card>
+      
     </div>
   );
 }
