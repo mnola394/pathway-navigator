@@ -12,9 +12,9 @@ import { useNavigation, Page } from "@/contexts/NavigationContext";
 const navItems: { id: Page; label: string; icon: React.ElementType }[] = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
   { id: "pathway", label: "Pathway Explorer", icon: Route },
-  // { id: "reaction", label: "Reaction Explorer", icon: FlaskConical },
-  // { id: "compound", label: "Compound Explorer", icon: Atom },
-  // { id: "analytics", label: "Analytics", icon: BarChart3 },
+  { id: "reaction", label: "Reaction Explorer", icon: FlaskConical },
+  { id: "compound", label: "Compound Explorer", icon: Atom },
+  { id: "analytics", label: "Analytics", icon: BarChart3 },
   { id: "about", label: "About / Help", icon: HelpCircle },
 ];
 
@@ -44,12 +44,12 @@ export function Sidebar() {
         })}
       </nav>
 
-      <div className="p-4 border-t border-sidebar-border">
+      {/* <div className="p-4 border-t border-sidebar-border">
         <div className="text-xs text-sidebar-muted">
           <p>Mock Data Mode</p>
           <p className="mt-1">v1.0.0</p>
         </div>
-      </div>
+      </div> */}
     </aside>
   );
 }

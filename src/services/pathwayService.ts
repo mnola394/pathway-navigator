@@ -213,7 +213,7 @@ export async function getReactionParticipants(
 export const buildMultiSetPathQuery = (
   starts: string[],
   targets: string[],
-  steps: number
+  maxSteps: number
 ): string => {
   if (starts.length === 0) {
     throw new Error("buildMultiSetPathQuery: starts must not be empty");
@@ -221,52 +221,103 @@ export const buildMultiSetPathQuery = (
   if (targets.length === 0) {
     throw new Error("buildMultiSetPathQuery: targets must not be empty");
   }
-  if (steps < 1) {
-    throw new Error("buildMultiSetPathQuery: steps must be >= 1");
+  if (maxSteps < 1) {
+    throw new Error("buildMultiSetPathQuery: maxSteps must be >= 1");
   }
 
   const startLits = starts.map((s) => `"${escapeLiteral(s)}"`);
   const targetLits = targets.map((s) => `"${escapeLiteral(s)}"`);
 
-  // For VALUES { ... } (targets only) → space-separated
+  // VALUES { ... } wants space-separated
   const targetValsValues = targetLits.join(" ");
 
-  // For IN( ... ) → comma-separated
-  const startValsIn  = startLits.join(", ");
+  // IN ( ... ) wants comma-separated
+  const startValsIn = startLits.join(", ");
   const targetValsIn = targetLits.join(", ");
 
-  // ----- BODY: chain of rxn1..rxnN and compounds -----
-  let body = "";
-  for (let i = 1; i <= steps; i++) {
-    const prev = i === 1 ? "?start" : `?mid${i - 1}`;
-    const next = i === steps ? "?target" : `?mid${i}`;
+  // --------------------------
+  // UNION branches for length 1..maxSteps
+  // --------------------------
+  const unionBranches: string[] = [];
 
-    const nextSmilesVar = i === steps ? "?targetSmiles" : `?mid${i}Smiles`;
+  for (let L = 1; L <= maxSteps; L++) {
+    const lines: string[] = [];
 
-    body += `
-      # STEP ${i}
-      ?rxn${i} ck:hasReactant ${prev} ;
-             ck:hasProduct  ${next} .
-      ${next} ck:smiles ${nextSmilesVar} .
-      OPTIONAL { ?rxn${i} ck:reactionId ?rxn${i}Id }
-    `;
+    // First reaction: from a "start" compound
+    lines.push(`
+      # First reaction (uses a specific start compound in the chain)
+      ?rxn1 ck:hasReactant ?startNode ;
+            ck:hasProduct  ${L === 1 ? "?target" : "?mid1"} .
+      ?startNode ck:smiles ?startSmiles .
+      FILTER(?startSmiles IN (${startValsIn})).
+    `);
+
+    if (L === 1) {
+      // Direct 1-step: startNode -> target
+      lines.push(`
+        OPTIONAL { ?rxn1 ck:reactionId ?rxn1Id }
+        BIND(?rxn1 AS ?rxnLast)
+      `);
+    } else {
+      // For L >= 2, we have mid nodes
+      lines.push(`
+        ?mid1 ck:smiles ?mid1Smiles .
+      `);
+
+      // Middle segments: mid1 -> mid2 -> ... -> mid{L-1}
+      for (let i = 2; i <= L - 1; i++) {
+        const prevMid = `?mid${i - 1}`;
+        const curMid = `?mid${i}`;
+        lines.push(`
+          ?rxn${i} ck:hasReactant ${prevMid} ;
+                 ck:hasProduct  ${curMid} .
+          ${curMid} ck:smiles ?mid${i}Smiles .
+        `);
+      }
+
+      // Last reaction: mid{L-1} -> target
+      const lastMid = `?mid${L - 1}`;
+      lines.push(`
+        ?rxn${L} ck:hasReactant ${lastMid} ;
+                ck:hasProduct  ?target .
+      `);
+
+      // Optional IDs + bind last reaction
+      for (let i = 1; i <= L; i++) {
+        lines.push(`OPTIONAL { ?rxn${i} ck:reactionId ?rxn${i}Id }`);
+      }
+      lines.push(`BIND(?rxn${L} AS ?rxnLast)`);
+    }
+
+    const block = `
+    ${L === 1 ? "" : "UNION"}
+    {
+      ${lines.join("\n")}
+    }`;
+
+    unionBranches.push(block);
   }
 
+  const unionBlock = unionBranches.join("\n");
+
+  // Vars in SELECT: all rxnX / rxnXId up to maxSteps, and all midXSmiles up to maxSteps-1
   const reactionVars = Array.from(
-    { length: steps },
+    { length: maxSteps },
     (_, i) => `?rxn${i + 1} ?rxn${i + 1}Id`
   ).join(" ");
 
   const midSmilesVars =
-    steps > 1
+    maxSteps > 1
       ? Array.from(
-          { length: steps - 1 },
+          { length: maxSteps - 1 },
           (_, i) => `?mid${i + 1}Smiles`
         ).join(" ")
       : "";
 
-  // ----- ALL-OF constraints for rxn1 and rxnN -----
-  const firstAndLastConstraints = `
+  // --------------------------
+  // ALL-OF constraints for rxn1 and rxnLast
+  // --------------------------
+  const allOfConstraints = `
     # First reaction must use ALL required start SMILES as reactants
     {
       SELECT ?rxn1
@@ -281,13 +332,13 @@ export const buildMultiSetPathQuery = (
 
     # Last reaction must produce ALL required target SMILES as products
     {
-      SELECT ?rxn${steps}
+      SELECT ?rxnLast
       WHERE {
-        ?rxn${steps} ck:hasProduct ?tProd .
+        ?rxnLast ck:hasProduct ?tProd .
         ?tProd ck:smiles ?tProdSmiles .
         FILTER(?tProdSmiles IN (${targetValsIn}))
       }
-      GROUP BY ?rxn${steps}
+      GROUP BY ?rxnLast
       HAVING (COUNT(DISTINCT ?tProdSmiles) = ${targets.length})
     }
   `;
@@ -301,30 +352,25 @@ SELECT DISTINCT
   ?targetSmiles
 WHERE {
 
-  # targets are still a set of allowed endpoints
+  # Allowed target endpoints
   VALUES ?targetSmiles { ${targetValsValues} }
-
-  # final target node for the chain
   ?target ck:smiles ?targetSmiles .
 
-  ${body}
+  # Path branches of length 1..${maxSteps}
+  ${unionBlock}
 
-  ${firstAndLastConstraints}
+  # Multi-set constraints (all starts in rxn1, all targets in rxnLast)
+  ${allOfConstraints}
 }
 `;
 };
 
-
-/**
- * A single detailed path of fixed length `stepCount`, matching the
- * multi-set query above.
- */
 export interface DetailedPath {
-  startSmiles: string[];  // now a set (input)
-  targetSmiles: string;   // concrete endpoint from query
-  intermediates: string[];
+  startSmiles: string[];    // the input set (not per-row)
+  targetSmiles: string;     // concrete endpoint from query
+  intermediates: string[];  // only up to actual path length - 1
   reactions: { id: string | null }[];
-  stepCount: number;
+  stepCount: number;        // actual length (1..maxSteps)
 }
 
 export async function getMultiSetPaths(
@@ -335,36 +381,61 @@ export async function getMultiSetPaths(
   const query = buildMultiSetPathQuery(starts, targets, steps);
 
   const data: SparqlJsonResult = await executeSparqlQuery(query, {
-    repositoryId: REPOSITORY_ID,
+    repositoryId: "chemkg",
     infer: true,
     timeoutMs: 60000,
   });
 
-  const paths: DetailedPath[] = data.results.bindings.map((b: any) => {
-    const targetSmiles = b.targetSmiles?.value ?? "";
+  const paths: DetailedPath[] = data.results.bindings
+    .map((b: any) => {
+      // Prefer bound values; fall back to the first input if missing
+      const startSmiles =
+        b.startSmiles?.value ?? (starts.length === 1 ? starts[0] : "");
+      const targetSmiles =
+        b.targetSmiles?.value ?? (targets.length === 1 ? targets[0] : "");
 
-    const intermediates: string[] = [];
-    for (let i = 1; i <= steps - 1; i++) {
-      const midVar = b[`mid${i}Smiles`];
-      if (midVar && midVar.value) {
-        intermediates.push(midVar.value);
+      // 🔹 Detect how many steps this row actually has
+      let stepCount = 0;
+      for (let i = 1; i <= steps; i++) {
+        const rxnVar = b[`rxn${i}`];
+        const rxnIdVar = b[`rxn${i}Id`];
+        if (rxnVar || rxnIdVar) {
+          stepCount = i;
+        }
       }
-    }
 
-    const reactions = Array.from({ length: steps }, (_, i) => {
-      const idx = i + 1;
-      const rxnIdBinding = b[`rxn${idx}Id`];
-      return { id: rxnIdBinding?.value ?? null };
-    });
+      // No reactions bound → ignore this row
+      if (stepCount === 0) {
+        return null;
+      }
 
-    return {
-      startSmiles: starts,        // you already know the full set
-      targetSmiles,
-      intermediates,
-      reactions,
-      stepCount: steps,
-    };
-  });
+      // Collect intermediates: ?mid1Smiles, ?mid2Smiles, ... up to stepCount-1
+      const intermediates: string[] = [];
+      for (let i = 1; i <= stepCount - 1; i++) {
+        const midVar = b[`mid${i}Smiles`];
+        if (midVar && midVar.value) {
+          intermediates.push(midVar.value);
+        }
+      }
+
+      // Collect reaction IDs actually present in this row
+      const reactions = Array.from({ length: stepCount }, (_, i) => {
+        const idx = i + 1;
+        const rxnIdBinding = b[`rxn${idx}Id`];
+        return {
+          id: rxnIdBinding?.value ?? null,
+        };
+      });
+
+      return {
+        startSmiles,
+        targetSmiles,
+        intermediates,
+        reactions,
+        stepCount,
+      };
+    })
+    .filter((p): p is DetailedPath => p !== null);
 
   console.log("getMultiSetPaths result:", paths);
   return paths;

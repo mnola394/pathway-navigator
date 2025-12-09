@@ -60,7 +60,9 @@ export function PathwayExplorer() {
   // ---- Compound search state (shared for start/target) ----
   const [activeField, setActiveField] = useState<ActiveField>(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [searchResults, setSearchResults] = useState<CompoundSearchResult[]>([]);
+  const [searchResults, setSearchResults] = useState<CompoundSearchResult[]>(
+    []
+  );
   const [searchLoading, setSearchLoading] = useState(false);
 
   // Run search when searchTerm changes
@@ -333,7 +335,8 @@ export function PathwayExplorer() {
                                     </span>
                                   )}
                                   <span className="text-[10px] text-muted-foreground">
-                                    Score {r.score} • {r.reactionCount} reactions
+                                    Score {r.score} • {r.reactionCount}{" "}
+                                    reactions
                                   </span>
                                 </button>
                               ))
@@ -441,7 +444,8 @@ export function PathwayExplorer() {
                                     </span>
                                   )}
                                   <span className="text-[10px] text-muted-foreground">
-                                    Score {r.score} • {r.reactionCount} reactions
+                                    Score {r.score} • {r.reactionCount}{" "}
+                                    reactions
                                   </span>
                                 </button>
                               ))
@@ -470,7 +474,7 @@ export function PathwayExplorer() {
             {/* Exact Steps */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <Label className="text-sm font-medium">Exact Steps</Label>
+                <Label className="text-sm font-medium">Max Steps</Label>
                 <span className="text-sm font-mono text-muted-foreground">
                   {maxSteps[0]}
                 </span>
@@ -484,12 +488,12 @@ export function PathwayExplorer() {
                 className="w-full"
               />
               <p className="text-xs text-muted-foreground">
-                Returns pathways with exactly this many reaction steps.
+                Returns pathways with Maximum this many reaction steps.
               </p>
             </div>
 
             {/* Shortest Path Toggle (optional UI, not used in multi-set query) */}
-            <div className="flex items-center justify-between">
+            {/* <div className="flex items-center justify-between">
               <Label htmlFor="shortest" className="text-sm font-medium">
                 Only show shortest paths
               </Label>
@@ -498,7 +502,7 @@ export function PathwayExplorer() {
                 checked={shortestOnly}
                 onCheckedChange={setShortestOnly}
               />
-            </div>
+            </div> */}
 
             {/* Search Button */}
             <Button onClick={handleSearch} className="w-full">
@@ -560,56 +564,107 @@ export function PathwayExplorer() {
                       <>
                         <p className="text-sm text-muted-foreground">
                           Found {paths.length} detailed path
-                          {paths.length === 1 ? "" : "s"} with exactly{" "}
+                          {paths.length === 1 ? "" : "s"}
+                          {/* with exactly{" "}
                           {maxSteps[0]} step
-                          {maxSteps[0] === 1 ? "" : "s"}.
+                          {maxSteps[0] === 1 ? "" : "s"} */}
+                          .
                         </p>
                         <div className="space-y-2">
                           {paths.map((p, index) => {
+                            // startSmiles may be string or string[]
+                            const startSmilesValue = Array.isArray(
+                              p.startSmiles
+                            )
+                              ? p.startSmiles[0] ?? ""
+                              : p.startSmiles;
+
+                            const totalSteps =
+                              p.stepCount ?? p.reactions.length;
+
+                            // Build explicit step list: from, to, reactionId
+                            const steps = Array.from(
+                              { length: totalSteps },
+                              (_, i) => {
+                                const from =
+                                  i === 0
+                                    ? startSmilesValue
+                                    : p.intermediates[i - 1] ?? "(unknown)";
+
+                                const to =
+                                  i === totalSteps - 1
+                                    ? p.targetSmiles
+                                    : p.intermediates[i] ?? "(unknown)";
+
+                                const reactionId = p.reactions[i]?.id ?? null;
+
+                                return { from, to, reactionId };
+                              }
+                            );
+
+                            // Optional compact chain string for quick glance
                             const chain = [
-                              p.startSmiles,
+                              startSmilesValue,
                               ...p.intermediates.filter(
                                 (x) => x && x.length > 0
                               ),
                               p.targetSmiles,
                             ];
 
-                            const reactionIds = p.reactions
-                              .map((r, i) => r.id || `rxn${i + 1}`)
-                              .filter(Boolean);
-
                             return (
                               <Card
-                                key={`${p.startSmiles}-${p.targetSmiles}-${index}`}
+                                key={`${startSmilesValue}-${p.targetSmiles}-${index}`}
                               >
-                                <CardContent className="py-3 space-y-2">
-                                  <p className="text-xs text-muted-foreground">
-                                    Path {index + 1}
-                                  </p>
-                                  <p className="text-xs font-mono">
-                                    {chain.join("  →  ")}
-                                  </p>
-                                  <div className="text-xs text-muted-foreground mt-1">
-                                    <span className="mr-1">Reactions:</span>
-                                    {reactionIds.length > 0 ? (
-                                      <span className="flex flex-wrap gap-2">
-                                        {reactionIds.map((id) => (
-                                          <Button
-                                            key={id}
-                                            type="button"
-                                            variant="link"
-                                            className="h-auto p-0 text-xs font-mono"
-                                            onClick={() =>
-                                              handleReactionClick(id)
-                                            }
-                                          >
-                                            {id}
-                                          </Button>
-                                        ))}
-                                      </span>
-                                    ) : (
-                                      "IDs not available"
-                                    )}
+                                <CardContent className="py-3 space-y-3">
+                                  {/* Header + compact chain */}
+                                  <div className="space-y-1">
+                                    <p className="text-xs text-muted-foreground">
+                                      Path {index + 1} ({totalSteps} step
+                                      {totalSteps === 1 ? "" : "s"})
+                                    </p>
+                                    <p className="text-[11px] font-mono text-muted-foreground">
+                                      {chain.join("  →  ")}
+                                    </p>
+                                  </div>
+
+                                  {/* Explicit per-step breakdown */}
+                                  <div className="space-y-2">
+                                    {steps.map((step, stepIndex) => (
+                                      <div
+                                        key={stepIndex}
+                                        className="rounded-md bg-muted/40 px-2 py-1.5 text-[11px] space-y-0.5"
+                                      >
+                                        <p className="font-medium text-foreground">
+                                          Step {stepIndex + 1}
+                                        </p>
+                                        <p className="font-mono">
+                                          {step.from}{" "}
+                                          <span className="mx-1 text-muted-foreground">
+                                            →
+                                          </span>
+                                          {step.to}
+                                        </p>
+                                        <p className="text-[10px] text-muted-foreground">
+                                          via reaction{" "}
+                                          {step.reactionId ? (
+                                            <Button
+                                              type="button"
+                                              variant="link"
+                                              className="h-auto p-0 text-[10px] font-mono align-baseline"
+                                              onClick={() =>
+                                                handleReactionClick(
+                                                  step.reactionId!
+                                                )
+                                              }
+                                            >
+                                              {step.reactionId}
+                                            </Button>
+                                          ) : (
+                                            "ID not available"
+                                          )}
+                                        </p>
+                                      </div>
+                                    ))}
                                   </div>
                                 </CardContent>
                               </Card>
