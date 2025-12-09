@@ -1,0 +1,172 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+@layer base {
+  :root {
+    --background: 210 20% 98%;
+    --foreground: 222 47% 11%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 222 47% 11%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 47% 11%;
+
+    --primary: 199 89% 48%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 222 47% 11%;
+
+    --muted: 210 40% 96%;
+    --muted-foreground: 215 16% 47%;
+
+    --accent: 43 96% 56%;
+    --accent-foreground: 222 47% 11%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 199 89% 48%;
+
+    --radius: 0.5rem;
+
+    /* Custom tokens */
+    --reaction: 168 76% 42%;
+    --reaction-foreground: 0 0% 100%;
+    --compound: 262 83% 58%;
+    --compound-foreground: 0 0% 100%;
+    --catalyst: 25 95% 53%;
+    --catalyst-foreground: 0 0% 100%;
+    --solvent: 199 89% 48%;
+    --solvent-foreground: 0 0% 100%;
+
+    --sidebar-background: 222 47% 11%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 199 89% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 217 33% 17%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 217 33% 17%;
+    --sidebar-ring: 199 89% 48%;
+    --sidebar-muted: 215 16% 47%;
+
+    --chart-1: 199 89% 48%;
+    --chart-2: 168 76% 42%;
+    --chart-3: 43 96% 56%;
+    --chart-4: 262 83% 58%;
+    --chart-5: 25 95% 53%;
+  }
+
+  .dark {
+    --background: 222 47% 6%;
+    --foreground: 210 40% 98%;
+
+    --card: 222 47% 8%;
+    --card-foreground: 210 40% 98%;
+
+    --popover: 222 47% 8%;
+    --popover-foreground: 210 40% 98%;
+
+    --primary: 199 89% 48%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 217 33% 17%;
+    --secondary-foreground: 210 40% 98%;
+
+    --muted: 217 33% 17%;
+    --muted-foreground: 215 20% 65%;
+
+    --accent: 43 96% 56%;
+    --accent-foreground: 222 47% 11%;
+
+    --destructive: 0 63% 31%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 217 33% 17%;
+    --input: 217 33% 17%;
+    --ring: 199 89% 48%;
+
+    --reaction: 168 76% 42%;
+    --reaction-foreground: 0 0% 100%;
+    --compound: 262 83% 58%;
+    --compound-foreground: 0 0% 100%;
+    --catalyst: 25 95% 53%;
+    --catalyst-foreground: 0 0% 100%;
+    --solvent: 199 89% 48%;
+    --solvent-foreground: 0 0% 100%;
+
+    --sidebar-background: 222 47% 6%;
+    --sidebar-foreground: 210 40% 98%;
+    --sidebar-primary: 199 89% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 217 33% 17%;
+    --sidebar-accent-foreground: 210 40% 98%;
+    --sidebar-border: 217 33% 17%;
+    --sidebar-ring: 199 89% 48%;
+    --sidebar-muted: 215 20% 65%;
+
+    --chart-1: 199 89% 48%;
+    --chart-2: 168 76% 42%;
+    --chart-3: 43 96% 56%;
+    --chart-4: 262 83% 58%;
+    --chart-5: 25 95% 53%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold tracking-tight;
+  }
+
+  code, .font-mono {
+    font-family: 'IBM Plex Mono', monospace;
+  }
+}
+
+@layer utilities {
+  .glass {
+    @apply bg-card/80 backdrop-blur-sm;
+  }
+
+  .smiles-code {
+    @apply font-mono text-sm bg-muted px-2 py-0.5 rounded;
+  }
+}
+/* ===== Scrollbar Themed to bg-card / muted tokens ===== */
+
+.reaction-scroll::-webkit-scrollbar {
+  width: 8px;
+}
+
+.reaction-scroll::-webkit-scrollbar-track {
+  background: hsl(var(--card)); /* matches bg-card */
+}
+
+.reaction-scroll::-webkit-scrollbar-thumb {
+  background: hsl(var(--muted)); /* subtle thumb */
+  border-radius: 8px;
+}
+
+.reaction-scroll::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground));
+}
+
+/* Firefox */
+.reaction-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--muted)) hsl(var(--card));
+}
