@@ -1,0 +1,243 @@
+<?xml version="1.0"?>
+<rdf:RDF
+  xmlns:ck="http://example.org/chemkg#"
+  xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+  xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"
+  xmlns:owl="http://www.w3.org/2002/07/owl#"
+  xmlns:xsd="http://www.w3.org/2001/XMLSchema#">
+
+  <owl:Ontology rdf:about="http://example.org/chemkg">
+    <rdfs:label>Chemical Reaction Knowledge Graph (USPTO) Ontology</rdfs:label>
+    <rdfs:comment>
+      Core classes and properties for compounds, reactions, and roles (reactant/product/agent),
+      plus an optional Participation pattern to capture role-as-data.
+    </rdfs:comment>
+  </owl:Ontology>
+
+
+  <owl:Class rdf:about="http://example.org/chemkg#Compound">
+    <rdfs:label>Compound</rdfs:label>
+    <owl:disjointWith rdf:resource="http://example.org/chemkg#Reaction"/>
+    <owl:disjointWith rdf:resource="http://example.org/chemkg#Participation"/>
+    <owl:disjointWith rdf:resource="http://example.org/chemkg#Role"/>
+    <rdfs:subClassOf>
+      <owl:Restriction>
+        <owl:onProperty rdf:resource="http://example.org/chemkg#smiles"/>
+        <owl:minCardinality rdf:datatype="http://www.w3.org/2001/XMLSchema#nonNegativeInteger">1</owl:minCardinality>
+      </owl:Restriction>
+    </rdfs:subClassOf>
+    <owl:hasKey rdf:parseType="Collection">
+      <rdf:Description rdf:about="http://example.org/chemkg#inchiKey"/>
+    </owl:hasKey>
+  </owl:Class>
+
+  <owl:Class rdf:about="http://example.org/chemkg#Reaction">
+    <rdfs:label>Reaction</rdfs:label>
+    <owl:disjointWith rdf:resource="http://example.org/chemkg#Participation"/>
+    <owl:disjointWith rdf:resource="http://example.org/chemkg#Role"/>
+    <rdfs:subClassOf>
+      <owl:Restriction>
+        <owl:onProperty rdf:resource="http://example.org/chemkg#hasReactant"/>
+        <owl:minQualifiedCardinality rdf:datatype="http://www.w3.org/2001/XMLSchema#nonNegativeInteger">1</owl:minQualifiedCardinality>
+        <owl:onClass rdf:resource="http://example.org/chemkg#Compound"/>
+      </owl:Restriction>
+    </rdfs:subClassOf>
+    <rdfs:subClassOf>
+      <owl:Restriction>
+        <owl:onProperty rdf:resource="http://example.org/chemkg#hasProduct"/>
+        <owl:minQualifiedCardinality rdf:datatype="http://www.w3.org/2001/XMLSchema#nonNegativeInteger">1</owl:minQualifiedCardinality>
+        <owl:onClass rdf:resource="http://example.org/chemkg#Compound"/>
+      </owl:Restriction>
+    </rdfs:subClassOf>
+    <owl:hasKey rdf:parseType="Collection">
+      <rdf:Description rdf:about="http://example.org/chemkg#reactionId"/>
+    </owl:hasKey>
+  </owl:Class>
+
+  <owl:Class rdf:about="http://example.org/chemkg#Participation">
+    <rdfs:label>Participation</rdfs:label>
+    <rdfs:subClassOf>
+      <owl:Restriction>
+        <owl:onProperty rdf:resource="http://example.org/chemkg#participatesReaction"/>
+        <owl:qualifiedCardinality rdf:datatype="http://www.w3.org/2001/XMLSchema#nonNegativeInteger">1</owl:qualifiedCardinality>
+        <owl:onClass rdf:resource="http://example.org/chemkg#Reaction"/>
+      </owl:Restriction>
+    </rdfs:subClassOf>
+    <rdfs:subClassOf>
+      <owl:Restriction>
+        <owl:onProperty rdf:resource="http://example.org/chemkg#participatesCompound"/>
+        <owl:qualifiedCardinality rdf:datatype="http://www.w3.org/2001/XMLSchema#nonNegativeInteger">1</owl:qualifiedCardinality>
+        <owl:onClass rdf:resource="http://example.org/chemkg#Compound"/>
+      </owl:Restriction>
+    </rdfs:subClassOf>
+    <rdfs:subClassOf>
+      <owl:Restriction>
+        <owl:onProperty rdf:resource="http://example.org/chemkg#hasRole"/>
+        <owl:qualifiedCardinality rdf:datatype="http://www.w3.org/2001/XMLSchema#nonNegativeInteger">1</owl:qualifiedCardinality>
+        <owl:onClass rdf:resource="http://example.org/chemkg#Role"/>
+      </owl:Restriction>
+    </rdfs:subClassOf>
+  </owl:Class>
+
+  <owl:Class rdf:about="http://example.org/chemkg#Role">
+    <rdfs:label>Role</rdfs:label>
+  </owl:Class>
+
+  <owl:Class rdf:about="http://example.org/chemkg#Patent">
+    <rdfs:label>Patent</rdfs:label>
+  </owl:Class>
+
+
+  <owl:ObjectProperty rdf:about="http://example.org/chemkg#hasReactant">
+    <rdfs:label>has reactant</rdfs:label>
+    <rdfs:domain rdf:resource="http://example.org/chemkg#Reaction"/>
+    <rdfs:range  rdf:resource="http://example.org/chemkg#Compound"/>
+    <rdfs:subPropertyOf rdf:resource="http://example.org/chemkg#involvesCompound"/>
+  </owl:ObjectProperty>
+
+  <owl:ObjectProperty rdf:about="http://example.org/chemkg#hasProduct">
+    <rdfs:label>has product</rdfs:label>
+    <rdfs:domain rdf:resource="http://example.org/chemkg#Reaction"/>
+    <rdfs:range  rdf:resource="http://example.org/chemkg#Compound"/>
+    <rdfs:subPropertyOf rdf:resource="http://example.org/chemkg#involvesCompound"/>
+  </owl:ObjectProperty>
+
+  <owl:ObjectProperty rdf:about="http://example.org/chemkg#hasAgent">
+    <rdfs:label>has agent</rdfs:label>
+    <rdfs:domain rdf:resource="http://example.org/chemkg#Reaction"/>
+    <rdfs:range  rdf:resource="http://example.org/chemkg#Compound"/>
+    <rdfs:subPropertyOf rdf:resource="http://example.org/chemkg#involvesCompound"/>
+  </owl:ObjectProperty>
+
+  <owl:ObjectProperty rdf:about="http://example.org/chemkg#hasCatalyst">
+    <rdfs:label>has catalyst</rdfs:label>
+    <rdfs:domain rdf:resource="http://example.org/chemkg#Reaction"/>
+    <rdfs:range  rdf:resource="http://example.org/chemkg#Compound"/>
+    <rdfs:subPropertyOf rdf:resource="http://example.org/chemkg#hasAgent"/>
+  </owl:ObjectProperty>
+
+  <owl:ObjectProperty rdf:about="http://example.org/chemkg#hasSolvent">
+    <rdfs:label>has solvent</rdfs:label>
+    <rdfs:domain rdf:resource="http://example.org/chemkg#Reaction"/>
+    <rdfs:range  rdf:resource="http://example.org/chemkg#Compound"/>
+    <rdfs:subPropertyOf rdf:resource="http://example.org/chemkg#hasAgent"/>
+  </owl:ObjectProperty>
+
+  <owl:ObjectProperty rdf:about="http://example.org/chemkg#reactantIn">
+    <rdfs:label>reactant in</rdfs:label>
+    <rdfs:domain rdf:resource="http://example.org/chemkg#Compound"/>
+    <rdfs:range  rdf:resource="http://example.org/chemkg#Reaction"/>
+    <owl:inverseOf rdf:resource="http://example.org/chemkg#hasReactant"/>
+  </owl:ObjectProperty>
+
+  <owl:ObjectProperty rdf:about="http://example.org/chemkg#productOf">
+    <rdfs:label>product of</rdfs:label>
+    <rdfs:domain rdf:resource="http://example.org/chemkg#Compound"/>
+    <rdfs:range  rdf:resource="http://example.org/chemkg#Reaction"/>
+    <owl:inverseOf rdf:resource="http://example.org/chemkg#hasProduct"/>
+  </owl:ObjectProperty>
+
+  <owl:ObjectProperty rdf:about="http://example.org/chemkg#agentIn">
+    <rdfs:label>agent in</rdfs:label>
+    <rdfs:domain rdf:resource="http://example.org/chemkg#Compound"/>
+    <rdfs:range  rdf:resource="http://example.org/chemkg#Reaction"/>
+    <owl:inverseOf rdf:resource="http://example.org/chemkg#hasAgent"/>
+  </owl:ObjectProperty>
+
+  <owl:ObjectProperty rdf:about="http://example.org/chemkg#involvesCompound">
+    <rdfs:label>involves compound</rdfs:label>
+    <rdfs:domain rdf:resource="http://example.org/chemkg#Reaction"/>
+    <rdfs:range  rdf:resource="http://example.org/chemkg#Compound"/>
+  </owl:ObjectProperty>
+
+  <owl:ObjectProperty rdf:about="http://example.org/chemkg#involvedIn">
+    <rdfs:label>involved in</rdfs:label>
+    <rdfs:domain rdf:resource="http://example.org/chemkg#Compound"/>
+    <rdfs:range  rdf:resource="http://example.org/chemkg#Reaction"/>
+    <owl:inverseOf rdf:resource="http://example.org/chemkg#involvesCompound"/>
+  </owl:ObjectProperty>
+
+  <owl:ObjectProperty rdf:about="http://example.org/chemkg#participatesCompound">
+    <rdfs:label>participates compound</rdfs:label>
+    <rdfs:domain rdf:resource="http://example.org/chemkg#Participation"/>
+    <rdfs:range  rdf:resource="http://example.org/chemkg#Compound"/>
+  </owl:ObjectProperty>
+
+  <owl:ObjectProperty rdf:about="http://example.org/chemkg#participatesReaction">
+    <rdfs:label>participates reaction</rdfs:label>
+    <rdfs:domain rdf:resource="http://example.org/chemkg#Participation"/>
+    <rdfs:range  rdf:resource="http://example.org/chemkg#Reaction"/>
+  </owl:ObjectProperty>
+
+  <owl:ObjectProperty rdf:about="http://example.org/chemkg#hasRole">
+    <rdfs:label>has role</rdfs:label>
+    <rdfs:domain rdf:resource="http://example.org/chemkg#Participation"/>
+    <rdfs:range  rdf:resource="http://example.org/chemkg#Role"/>
+  </owl:ObjectProperty>
+
+  <owl:ObjectProperty rdf:about="http://example.org/chemkg#documentedIn">
+    <rdfs:label>documented in</rdfs:label>
+    <rdfs:domain rdf:resource="http://example.org/chemkg#Reaction"/>
+    <rdfs:range  rdf:resource="http://example.org/chemkg#Patent"/>
+  </owl:ObjectProperty>
+
+
+  <owl:DatatypeProperty rdf:about="http://example.org/chemkg#smiles">
+    <rdfs:label>SMILES</rdfs:label>
+    <rdfs:domain rdf:resource="http://example.org/chemkg#Compound"/>
+    <rdfs:range  rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+  </owl:DatatypeProperty>
+
+  <owl:DatatypeProperty rdf:about="http://example.org/chemkg#inchiKey">
+    <rdfs:label>InChIKey</rdfs:label>
+    <rdfs:domain rdf:resource="http://example.org/chemkg#Compound"/>
+    <rdfs:range  rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+  </owl:DatatypeProperty>
+
+  <owl:DatatypeProperty rdf:about="http://example.org/chemkg#label">
+    <rdfs:label>common name</rdfs:label>
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+  </owl:DatatypeProperty>
+
+  <owl:DatatypeProperty rdf:about="http://example.org/chemkg#reactionSmiles">
+    <rdfs:label>reaction SMILES</rdfs:label>
+    <rdfs:domain rdf:resource="http://example.org/chemkg#Reaction"/>
+    <rdfs:range  rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+  </owl:DatatypeProperty>
+
+  <owl:DatatypeProperty rdf:about="http://example.org/chemkg#patentId">
+    <rdfs:label>patent identifier (on reaction)</rdfs:label>
+    <rdfs:domain rdf:resource="http://example.org/chemkg#Reaction"/>
+    <rdfs:range  rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+  </owl:DatatypeProperty>
+
+  <owl:DatatypeProperty rdf:about="http://example.org/chemkg#source">
+    <rdfs:label>source</rdfs:label>
+    <rdfs:range rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+  </owl:DatatypeProperty>
+
+  <owl:DatatypeProperty rdf:about="http://example.org/chemkg#year">
+    <rdfs:label>year</rdfs:label>
+    <rdfs:domain rdf:resource="http://example.org/chemkg#Reaction"/>
+    <rdfs:range  rdf:resource="http://www.w3.org/2001/XMLSchema#gYear"/>
+  </owl:DatatypeProperty>
+
+  <owl:DatatypeProperty rdf:about="http://example.org/chemkg#yieldPercent">
+    <rdfs:label>yield (%)</rdfs:label>
+    <rdfs:domain rdf:resource="http://example.org/chemkg#Reaction"/>
+    <rdfs:range  rdf:resource="http://www.w3.org/2001/XMLSchema#float"/>
+  </owl:DatatypeProperty>
+
+  <owl:DatatypeProperty rdf:about="http://example.org/chemkg#hasPatentId">
+    <rdfs:label>patent ID</rdfs:label>
+    <rdfs:domain rdf:resource="http://example.org/chemkg#Patent"/>
+    <rdfs:range  rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+  </owl:DatatypeProperty>
+
+  <owl:DatatypeProperty rdf:about="http://example.org/chemkg#reactionId">
+    <rdfs:label>reaction ID</rdfs:label>
+    <rdfs:domain rdf:resource="http://example.org/chemkg#Reaction"/>
+    <rdfs:range  rdf:resource="http://www.w3.org/2001/XMLSchema#string"/>
+  </owl:DatatypeProperty>
+
+</rdf:RDF>
