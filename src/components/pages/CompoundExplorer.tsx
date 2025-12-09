@@ -1,12 +1,27 @@
 // src/components/CompoundExplorer.tsx
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { Atom, Search } from "lucide-react";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+
 import { ReactionDetailsDrawer } from "@/components/common/ReactionDetailsDrawer";
-import { Search, Atom, FlaskConical, Beaker, ArrowRight } from "lucide-react";
+
+import {
+  searchCompounds,
+  type CompoundSearchResult,
+} from "@/services/searchService";
 
 import {
   getCompoundRoleStatsBySmiles,
@@ -15,383 +30,349 @@ import {
   type CompoundRoleReaction,
 } from "@/services/compoundRoleService";
 
-// View model we use in the UI, derived from stats + reaction lists
-interface SelectedCompoundVM {
-  compoundIri: string;
-  smiles: string;
-  label: string | null;
-  roleCount: number;
-  exampleRoles: string[];
-  asReactant: string[];
-  asProduct: string[];
-  asSolvent: string[];
-  asCatalyst: string[];
-  asAgent: string[];
-}
-
-const ROLE_LABELS: Record<string, string> = {
-  hasReactant: "Reactant",
-  hasProduct: "Product",
-  hasSolvent: "Solvent",
-  hasCatalyst: "Catalyst",
-  hasAgent: "Agent",
-};
-
 export function CompoundExplorer() {
-  const [searchValue, setSearchValue] = useState("");
-  const [selectedCompound, setSelectedCompound] =
-    useState<SelectedCompoundVM | null>(null);
-  const [selectedReaction, setSelectedReaction] = useState<string | null>(null);
-  const [drawerOpen, setDrawerOpen] = useState(false);
+  // --- SMILES search / typeahead state ----------------------
+  const [searchValue, setSearchValue] = useState(""); // selected SMILES/text
+  const [typeaheadTerm, setTypeaheadTerm] = useState("");
+  const [suggestions, setSuggestions] = useState<CompoundSearchResult[]>([]);
+  const [searchLoading, setSearchLoading] = useState(false);
 
-  const [loading, setLoading] = useState(false);
+  // --- results state ----------------------------------------
+  const [stats, setStats] = useState<CompoundRoleStats | null>(null);
+  const [roleReactions, setRoleReactions] = useState<CompoundRoleReaction[]>(
+    []
+  );
+  const [loadingDetails, setLoadingDetails] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleSearch = async () => {
-    const q = searchValue.trim();
-    if (!q) {
-      setError("Please enter a SMILES string to search.");
-      setSelectedCompound(null);
+  // --- reaction drawer state --------------------------------
+  const [selectedReactionId, setSelectedReactionId] = useState<string | null>(
+    null
+  );
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
+  const openReactionDrawer = (reactionId: string | null) => {
+    if (!reactionId) return;
+    setSelectedReactionId(reactionId);
+    setDrawerOpen(true);
+  };
+
+  // -------- typeahead: searchCompounds on typeaheadTerm -----
+  useEffect(() => {
+    const q = typeaheadTerm.trim();
+    if (q.length < 2) {
+      setSuggestions([]);
+      setSearchLoading(false);
       return;
     }
 
-    setLoading(true);
+    let cancelled = false;
+    setSearchLoading(true);
+
+    (async () => {
+      try {
+        const res = await searchCompounds(q, 8);
+        if (!cancelled) setSuggestions(res);
+      } catch (err) {
+        console.error("CompoundExplorer searchCompounds error:", err);
+        if (!cancelled) setSuggestions([]);
+      } finally {
+        if (!cancelled) setSearchLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [typeaheadTerm]);
+
+  const pickSuggestion = (c: CompoundSearchResult) => {
+    const value = c.smiles ?? c.label ?? "";
+    if (!value) return;
+    setSearchValue(value);
+    setTypeaheadTerm("");
+    setSuggestions([]);
+  };
+
+  // -------- main “Search” action: fetch stats + reactions ----
+  const handleSearch = async () => {
+    const q = searchValue.trim();
+    if (!q) {
+      setStats(null);
+      setRoleReactions([]);
+      setError(null);
+      return;
+    }
+
+    setLoadingDetails(true);
     setError(null);
-    setSelectedCompound(null);
 
     try {
-      // run both queries in parallel
-      const [stats, reactions] = await Promise.all([
+      const [s, reactions] = await Promise.all([
         getCompoundRoleStatsBySmiles(q),
         getCompoundRoleReactionsBySmiles(q),
       ]);
 
-      if (!stats) {
-        setError("No compound found for that SMILES.");
-        setSelectedCompound(null);
-        return;
-      }
-
-      // Group reactions by role
-      const byRole: Record<string, string[]> = {
-        hasReactant: [],
-        hasProduct: [],
-        hasSolvent: [],
-        hasCatalyst: [],
-        hasAgent: [],
-      };
-
-      reactions.forEach((r: CompoundRoleReaction) => {
-        if (!r.reactionId) return;
-        if (byRole[r.role]) {
-          byRole[r.role].push(r.reactionId);
-        }
-      });
-
-      // Build example role labels from non-empty groups
-      const exampleRoles: string[] = Object.entries(byRole)
-        .filter(([_, ids]) => ids.length > 0)
-        .map(([role]) => ROLE_LABELS[role] ?? role.replace("has", ""));
-
-      const vm: SelectedCompoundVM = {
-        compoundIri: stats.compoundIri,
-        smiles: stats.smiles ?? q,
-        label: stats.label ?? null,
-        roleCount: stats.totalRoles,
-        exampleRoles,
-        asReactant: byRole.hasReactant,
-        asProduct: byRole.hasProduct,
-        asSolvent: byRole.hasSolvent,
-        asCatalyst: byRole.hasCatalyst,
-        asAgent: byRole.hasAgent,
-      };
-
-      setSelectedCompound(vm);
-    } catch (e) {
-      console.error("CompoundExplorer search error:", e);
-      setError("Failed to query GraphDB for this compound. Check console for details.");
-      setSelectedCompound(null);
+      setStats(s);
+      setRoleReactions(reactions);
+    } catch (err) {
+      console.error("CompoundExplorer role fetch error:", err);
+      setError("Failed to load compound role details from GraphDB.");
+      setStats(null);
+      setRoleReactions([]);
     } finally {
-      setLoading(false);
+      setLoadingDetails(false);
     }
   };
 
-  const handleReactionClick = (reactionId: string) => {
-    setSelectedReaction(reactionId);
-    setDrawerOpen(true);
-  };
+  // Optionally: auto-run search if you want initial demo value
+  // useEffect(() => {
+  //   setSearchValue("BrCCO");
+  //   setTypeaheadTerm("BrCCO");
+  //   handleSearch();
+  // }, []);
 
-  // Collect all neighboring reactions (deduped)
-  const allNeighborReactions: string[] =
-    selectedCompound
-      ? Array.from(
-          new Set([
-            ...selectedCompound.asReactant,
-            ...selectedCompound.asProduct,
-            ...selectedCompound.asSolvent,
-            ...selectedCompound.asCatalyst,
-            ...selectedCompound.asAgent,
-          ])
-        )
-      : [];
+  const totalReactions =
+    stats?.totalRoles ??
+    new Set(roleReactions.map((r) => r.reactionIri)).size;
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-foreground">Compound Explorer</h1>
+        <h1 className="text-2xl font-bold text-foreground">
+          Compound Explorer
+        </h1>
         <p className="text-muted-foreground mt-1">
-          Inspect compounds and discover their roles in reactions
+          Inspect how a compound participates in reactions (reactant, product,
+          solvent, catalyst, agent).
         </p>
       </div>
 
-      {/* Search Card */}
+      {/* Search Bar */}
       <Card>
-        <CardContent className="pt-6 space-y-3">
+        <CardContent className="pt-6">
           <div className="flex flex-wrap items-end gap-4">
             <div className="flex-1 min-w-[200px]">
               <Label className="text-sm font-medium mb-2 block">SMILES</Label>
               <div className="relative">
                 <Atom className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                 <Input
-                  placeholder="Enter SMILES (e.g., BrCCO)"
+                  placeholder="Enter SMILES or name (e.g., BrCCO)"
                   className="pl-9 font-mono"
                   value={searchValue}
-                  onChange={(e) => setSearchValue(e.target.value)}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setSearchValue(v);
+                    setTypeaheadTerm(v);
+                  }}
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
                       e.preventDefault();
                       handleSearch();
                     }
                   }}
+                  onBlur={() => {
+                    // tiny delay so click on suggestion still works
+                    setTimeout(() => {
+                      setSuggestions([]);
+                    }, 150);
+                  }}
                 />
+
+                {/* Suggestions dropdown */}
+                {typeaheadTerm.trim().length >= 2 && suggestions.length > 0 && (
+                  <div className="absolute z-20 mt-1 w-full rounded-md border bg-popover shadow-md max-h-56 overflow-y-auto text-xs">
+                    {searchLoading && (
+                      <p className="p-2 text-muted-foreground">
+                        Searching compounds…
+                      </p>
+                    )}
+                    {!searchLoading &&
+                      suggestions.map((c) => (
+                        <button
+                          key={c.compoundIri || c.smiles}
+                          type="button"
+                          className="w-full px-2 py-1.5 text-left hover:bg-muted flex flex-col"
+                          onMouseDown={(e) => {
+                            e.preventDefault();
+                            pickSuggestion(c);
+                          }}
+                        >
+                          <span className="font-mono">
+                            {c.smiles ?? "(no SMILES)"}
+                          </span>
+                          {c.label && (
+                            <span className="text-[11px] text-muted-foreground">
+                              {c.label}
+                            </span>
+                          )}
+                          <span className="text-[10px] text-muted-foreground">
+                            Score {c.score} • {c.reactionCount} reactions
+                          </span>
+                        </button>
+                      ))}
+                  </div>
+                )}
               </div>
             </div>
-            {/* <div className="w-[200px]">
-              <Label className="text-sm font-medium mb-2 block">
-                Label / Name (optional)
-              </Label>
-              <Input
-                placeholder="e.g., 2-bromoethanol"
-                disabled
-                className="bg-muted cursor-not-allowed"
-              />
-            </div> */}
-            <Button onClick={handleSearch} disabled={loading}>
+
+            <Button onClick={handleSearch}>
               <Search className="w-4 h-4 mr-2" />
-              {loading ? "Searching…" : "Search Compound"}
+              Search
             </Button>
           </div>
+
           {error && (
-            <p className="text-sm text-red-500 mt-1">
-              {error}
+            <p className="text-sm text-red-500 mt-3">{error}</p>
+          )}
+          {loadingDetails && !error && (
+            <p className="text-sm text-muted-foreground mt-3">
+              Loading compound roles from GraphDB…
             </p>
           )}
         </CardContent>
       </Card>
 
-      {selectedCompound && (
-        <>
-          {/* Compound Overview */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base font-semibold flex items-center gap-2">
-                <Atom className="w-4 h-4 text-compound" />
-                Compound Overview
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-start justify-between">
-                <div>
-                  <h3 className="text-xl font-mono font-semibold text-foreground break-all">
-                    {selectedCompound.smiles}
-                  </h3>
-                  {selectedCompound.label && (
-                    <p className="text-muted-foreground mt-1">
-                      {selectedCompound.label}
-                    </p>
-                  )}
-                  <p className="text-xs text-muted-foreground mt-1 break-all">
-                    <span className="font-semibold">IRI:</span>{" "}
-                    {selectedCompound.compoundIri}
-                  </p>
-                </div>
-                <Badge variant="secondary" className="font-mono">
-                  {selectedCompound.roleCount} roles
-                </Badge>
+      {/* Role Stats */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base font-semibold flex items-center gap-2">
+            Compound Roles
+            {stats && (
+              <Badge variant="secondary" className="ml-2 font-mono">
+                {stats.label ?? stats.smiles ?? "Unnamed compound"}
+              </Badge>
+            )}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {!stats && !loadingDetails && !error && (
+            <p className="text-sm text-muted-foreground">
+              Enter a SMILES or name and click <span className="font-semibold">Search</span>{" "}
+              to view role statistics.
+            </p>
+          )}
+
+          {stats && (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3 text-xs">
+              <div className="p-3 rounded-lg border bg-muted/40 flex flex-col gap-1">
+                <span className="text-[11px] text-muted-foreground">
+                  Total reactions
+                </span>
+                <span className="text-lg font-semibold font-mono">
+                  {stats.totalRoles}
+                </span>
               </div>
 
-              {selectedCompound.exampleRoles.length > 0 && (
-                <div className="flex flex-wrap gap-2">
-                  {selectedCompound.exampleRoles.map((role, idx) => (
-                    <Badge key={idx} variant="outline" className="capitalize">
-                      {role}
-                    </Badge>
-                  ))}
-                </div>
-              )}
-
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-border">
-                <div className="text-center p-3 bg-muted/50 rounded-lg">
-                  <p className="text-2xl font-bold text-reaction">
-                    {selectedCompound.asReactant.length}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    As Reactant
-                  </p>
-                </div>
-                <div className="text-center p-3 bg-muted/50 rounded-lg">
-                  <p className="text-2xl font-bold text-compound">
-                    {selectedCompound.asProduct.length}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    As Product
-                  </p>
-                </div>
-                <div className="text-center p-3 bg-muted/50 rounded-lg">
-                  <p className="text-2xl font-bold text-solvent">
-                    {selectedCompound.asSolvent.length}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    As Solvent
-                  </p>
-                </div>
-                <div className="text-center p-3 bg-muted/50 rounded-lg">
-                  <p className="text-2xl font-bold text-catalyst">
-                    {selectedCompound.asCatalyst.length}
-                  </p>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    As Catalyst
-                  </p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Role Details */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* As Reactant */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                  <FlaskConical className="w-4 h-4 text-reaction" />
+              <div className="p-3 rounded-lg border bg-muted/40 flex flex-col gap-1">
+                <span className="text-[11px] text-muted-foreground">
                   As Reactant
-                  <Badge variant="secondary" className="ml-auto">
-                    {selectedCompound.asReactant.length}
-                  </Badge>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {selectedCompound.asReactant.length > 0 ? (
-                  <div className="space-y-2">
-                    {selectedCompound.asReactant.map((rxnId) => (
-                      <button
-                        key={rxnId}
-                        onClick={() => handleReactionClick(rxnId)}
-                        className="w-full flex items-center justify-between p-2 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
-                      >
-                        <span className="font-mono text-sm text-foreground">
-                          {rxnId}
-                        </span>
-                        <ArrowRight className="w-4 h-4 text-muted-foreground" />
-                      </button>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-sm text-muted-foreground text-center py-4">
-                    No reactions found
-                  </p>
-                )}
-              </CardContent>
-            </Card>
+                </span>
+                <span className="text-lg font-semibold font-mono">
+                  {stats.asReactant}
+                </span>
+              </div>
 
-            {/* As Product */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                  <Beaker className="w-4 h-4 text-compound" />
+              <div className="p-3 rounded-lg border bg-muted/40 flex flex-col gap-1">
+                <span className="text-[11px] text-muted-foreground">
                   As Product
-                  <Badge variant="secondary" className="ml-auto">
-                    {selectedCompound.asProduct.length}
-                  </Badge>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {selectedCompound.asProduct.length > 0 ? (
-                  <div className="space-y-2">
-                    {selectedCompound.asProduct.map((rxnId) => (
-                      <button
-                        key={rxnId}
-                        onClick={() => handleReactionClick(rxnId)}
-                        className="w-full flex items-center justify-between p-2 rounded-lg bg-muted/50 hover:bg-muted transition-colors"
-                      >
-                        <span className="font-mono text-sm text-foreground">
-                          {rxnId}
-                        </span>
-                        <ArrowRight className="w-4 h-4 text-muted-foreground" />
-                      </button>
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-sm text-muted-foreground text-center py-4">
-                    No reactions found
-                  </p>
-                )}
-              </CardContent>
-            </Card>
-          </div>
+                </span>
+                <span className="text-lg font-semibold font-mono">
+                  {stats.asProduct}
+                </span>
+              </div>
 
-          {/* Neighboring Reactions */}
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                <FlaskConical className="w-4 h-4 text-primary" />
-                All Neighboring Reactions
-                <Badge variant="secondary" className="ml-2 font-mono">
-                  {allNeighborReactions.length}
-                </Badge>
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground mb-4">
-                All reactions where this compound appears in any role:
-              </p>
-              {allNeighborReactions.length > 0 ? (
-                <div className="flex flex-wrap gap-2">
-                  {allNeighborReactions.map((rxnId, idx) => (
-                    <button
-                      key={`${rxnId}-${idx}`}
-                      onClick={() => handleReactionClick(rxnId)}
-                      className="px-3 py-1.5 rounded-lg bg-reaction text-reaction-foreground text-sm font-mono hover:opacity-90 transition-opacity"
-                    >
-                      {rxnId}
-                    </button>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-muted-foreground">
-                  No neighboring reactions found.
-                </p>
-              )}
-            </CardContent>
-          </Card>
-        </>
-      )}
+              <div className="p-3 rounded-lg border bg-muted/40 flex flex-col gap-1">
+                <span className="text-[11px] text-muted-foreground">
+                  As Solvent
+                </span>
+                <span className="text-lg font-semibold font-mono">
+                  {stats.asSolvent}
+                </span>
+              </div>
 
-      {!selectedCompound && !loading && !error && (
-        <Card className="py-12">
-          <CardContent>
-            <div className="text-center">
-              <Atom className="w-12 h-12 text-muted-foreground/30 mx-auto mb-4" />
-              <p className="text-muted-foreground">
-                Enter a SMILES string and click &quot;Search Compound&quot; to explore.
-              </p>
+              <div className="p-3 rounded-lg border bg-muted/40 flex flex-col gap-1">
+                <span className="text-[11px] text-muted-foreground">
+                  As Catalyst
+                </span>
+                <span className="text-lg font-semibold font-mono">
+                  {stats.asCatalyst}
+                </span>
+              </div>
+
+              <div className="p-3 rounded-lg border bg-muted/40 flex flex-col gap-1">
+                <span className="text-[11px] text-muted-foreground">
+                  As Agent
+                </span>
+                <span className="text-lg font-semibold font-mono">
+                  {stats.asAgent}
+                </span>
+              </div>
             </div>
-          </CardContent>
-        </Card>
-      )}
+          )}
+        </CardContent>
+      </Card>
 
+      {/* Role Reactions Table */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base font-semibold flex items-center gap-2">
+            Reactions with this compound
+            <Badge variant="secondary" className="ml-2 font-mono">
+              {loadingDetails
+                ? "…"
+                : `${roleReactions.length} rows • ${totalReactions} distinct reactions`}
+            </Badge>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {roleReactions.length === 0 && !loadingDetails && !error && (
+            <p className="text-sm text-muted-foreground">
+              No reactions found (or search not run yet).
+            </p>
+          )}
+
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="text-xs w-[120px]">Role</TableHead>
+                <TableHead className="text-xs w-[160px]">Reaction ID</TableHead>
+                <TableHead className="text-xs">Reaction IRI</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {roleReactions.map((r) => (
+                <TableRow
+                  key={`${r.role}-${r.reactionIri}`}
+                  className={
+                    r.reactionId
+                      ? "cursor-pointer hover:bg-muted/50"
+                      : "opacity-75"
+                  }
+                  onClick={() => openReactionDrawer(r.reactionId)}
+                >
+                  <TableCell className="text-xs">
+                    <Badge variant="outline" className="font-mono text-[10px]">
+                      {r.role}
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="font-mono text-xs text-primary">
+                    {r.reactionId ?? "—"}
+                  </TableCell>
+                  <TableCell className="font-mono text-[11px] max-w-[420px] truncate">
+                    {r.reactionIri}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
+
+      {/* Reaction details drawer (re-using existing component) */}
       <ReactionDetailsDrawer
-        reactionId={selectedReaction}
+        reactionId={selectedReactionId}
         open={drawerOpen}
         onOpenChange={setDrawerOpen}
       />
