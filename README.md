@@ -1,191 +1,172 @@
-FINAL README.md --- Pathway Explorer
+Pathway Explorer
 
-(fully integrated with everything your project does)
+Chemical Reaction Knowledge Graph (USPTO 1976)
 
-# 🔬 Pathway Explorer
+Pathway Explorer is a web-based tool for exploring chemical reaction pathways, searching compounds, browsing reactions, and examining relationships between chemical entities. The system is built on an RDF knowledge graph stored in GraphDB and queried through SPARQL. The interface is implemented using React and TypeScript.
 
-### Chemical Reaction Knowledge Graph (USPTO 1976)
+Features
+Pathway Discovery
 
-Pathway Explorer is a web-based platform for exploring **chemical
-reaction pathways**,\
-**searching compounds**, **browsing reactions**, and analyzing
-**reaction networks** derived from\
-USPTO patent chemistry data.
+Finds multi-step synthetic routes between compounds
 
-It is backed by a **GraphDB RDF knowledge graph**, queried with
-**SPARQL**, and presented through\
-a modern **React + TypeScript** frontend.
+Supports multiple start and target compounds
 
-------------------------------------------------------------------------
+User can set the maximum number of steps
 
-## 🚀 Features
+Displays intermediates and reaction identifiers in sequence
 
-### 🔄 Pathway Discovery
+Reaction Explorer
 
--   Find **1--N step synthetic routes** between compounds\
--   Supports **multiple start** and **multiple target** compounds\
--   Configurable **maximum step depth**\
--   Shows intermediates and reaction IDs step-by-step
+Search reactions by text or by compounds involved
 
-### 🔬 Reaction Explorer
+Shows all reaction participants, including reactants, products, agents, solvents, and catalysts
 
--   Search reactions by free-text or compound\
--   View all participants:
-    -   Reactants\
-    -   Products\
-    -   Agents\
-    -   Solvents\
-    -   Catalysts\
--   Includes linked **patent provenance** and **reaction SMILES**
+Displays patent information and reaction SMILES
 
-### 🧪 Compound Explorer
+Compound Explorer
 
--   Search compounds by SMILES or name\
--   View:
-    -   SMILES + label\
-    -   Role counts (reactant, product, solvent, catalyst, agent)\
-    -   All reactions involving the compound\
--   Useful for understanding compound behavior across many reactions
+Search compounds by SMILES or by label
 
-### 🧠 Knowledge Graph Backend
+Shows SMILES, name (if available), and the roles the compound appears in
 
--   Built entirely on **GraphDB Free Edition**\
--   Custom **OWL ontology** defines reactions, compounds, patents, and
-    roles\
--   All features powered by **SPARQL 1.1**
+Lists all reactions involving the selected compound
 
-------------------------------------------------------------------------
+Knowledge Graph Backend
 
-# 🧬 Data Source & Pipeline
+Implemented using GraphDB Free Edition
 
-### Dataset
+Uses a custom OWL ontology describing reactions, compounds, patents, and roles
 
-USPTO **1976 chemical grant** patents (CML format).\
-Each reaction entry provides: - reaction SMILES\
-- reactants, products, solvents, catalysts, agents\
-- patent document ID
+All queries are executed with SPARQL 1.1
 
-### Pipeline (ETL)
+Data Source and Processing Pipeline
+Dataset
 
-1.  Parse USPTO CML XML files\
-2.  Extract reaction participants\
-3.  Normalize SMILES (RDKit canonicalization, atom-map removal)\
-4.  Generate RDF triples using `ontology.owl`\
-5.  Export graph as `uspto_1976_chemkg.ttl`\
-6.  Import into GraphDB
+The project uses the 1976 USPTO chemical grant patent data (CML format).
+Each entry contains:
 
-Resulting graph: - \~18,000 reactions\
-- \~26,000 compounds\
-- \~260,000 triples
+reaction SMILES
 
-------------------------------------------------------------------------
+reactants, products, catalysts, solvents, and other agents
 
-# ⚙️ Technology Stack
+patent document ID
 
--   **React + TypeScript**
--   **TailwindCSS + shadcn/ui**
--   **GraphDB Free Edition**
--   **SPARQL 1.1**
--   **RDF / OWL Ontology**
--   **Python ETL tools**
--   **RDKit (cheminformatics)**
+ETL Pipeline
 
-------------------------------------------------------------------------
+Parse USPTO CML XML files
 
-# 🛠️ Installation & Setup
+Extract reaction participants
 
-Follow these steps to run the project locally.
+Normalize SMILES (RDKit canonicalization and atom-map removal)
 
-------------------------------------------------------------------------
+Generate RDF triples using the ontology
 
-## 1️⃣ Clone the Repository
+Export triples as uspto_1976_chemkg.ttl
 
-``` bash
+Import ontology and generated triples into GraphDB
+
+The resulting knowledge graph contains approximately:
+
+18,000 reactions
+
+26,000 compounds
+
+260,000 triples
+
+Technology Stack
+
+React and TypeScript
+
+TailwindCSS and shadcn/ui
+
+GraphDB Free Edition
+
+SPARQL 1.1
+
+RDF / OWL ontology
+
+Python ETL scripts
+
+RDKit for SMILES normalization
+
+Installation and Setup
+1. Clone the Repository
 git clone https://github.com/your-username/pathway-explorer.git
 cd pathway-explorer
-```
 
-## 2️⃣ Install Frontend Dependencies
-
-``` bash
+2. Install Frontend Dependencies
 npm install
 npm run dev
-```
 
-Frontend: http://localhost:5173
 
-## 3️⃣ Install & Run GraphDB
+Frontend runs at:
+http://localhost:5173
 
-Download: https://www.ontotext.com/products/graphdb/
+3. Install and Start GraphDB
 
-Start: - Windows: `graphdb.exe` - macOS/Linux: `bin/graphdb`
+Download from Ontotext:
+https://www.ontotext.com/products/graphdb/
 
-Workbench: http://localhost:7200
+Run GraphDB:
 
-## 4️⃣ Create a GraphDB Repository
+Windows: graphdb.exe
 
-Repository ID: `chemkg`\
-Ruleset: `OWL2-RL`
+macOS/Linux: bin/graphdb
 
-## 5️⃣ Import Data
+Workbench URL:
+http://localhost:7200
 
-Upload: - `ontology.owl` - `uspto_1976_chemkg.ttl`
+4. Create GraphDB Repository
 
-Should contain \~260,000 triples.
+Repository ID: chemkg
+Ruleset: OWL2-RL
 
-## 6️⃣ Configure Frontend → GraphDB Connection
+5. Import Required Files
 
-Edit: `src/services/graphdbClient.ts`
+Import into the same repository:
 
-Set:
+ontology.owl
 
-``` ts
+uspto_1976_chemkg.ttl
+
+After import, the repository should contain ~260,000 triples.
+
+6. Configure Frontend to Connect to GraphDB
+
+Edit: src/services/graphdbClient.ts
+
 const GRAPHDB_BASE_URL = "http://localhost:7200";
 const REPOSITORY_ID = "chemkg";
-```
 
-------------------------------------------------------------------------
+Using the Application
+Compound Search
 
-# 🧪 Using the Application
+Enter a SMILES string or name to view compound details and reactions.
 
-### 🔍 Compound Search
+Reaction Explorer
 
-SMILES or name → view compound details.
+Browse reactions, participants, reaction SMILES, and associated patents.
 
-### 🔬 Reaction Explorer
+Pathway Explorer
 
-Browse reactions, participants, SMILES, patent links.
+Enter a starting compound, target compound, and number of steps to generate possible synthetic pathways.
 
-### 🔄 Pathway Explorer
+Troubleshooting
 
-Enter start + target compounds + max steps → get pathways.
+If no results appear, check that both ontology and data files were imported into the same repository.
 
-------------------------------------------------------------------------
+SPARQL query errors may occur if SMILES strings contain invalid characters.
 
-# 🧠 Troubleshooting
+For slow searches, refine input compounds or reduce the maximum pathway depth.
 
-❌ No results?\
-Both files must be imported into the same repo.
+Future Work
 
-❌ SPARQL errors?\
-Likely unescaped SMILES.
+Add USPTO data from additional years
 
-❌ Slow search?\
-Use `searchService.ts`.
+Integrate PubChemRDF and ChEMBL-RDF
 
-------------------------------------------------------------------------
+Extend ontology to include reaction conditions
 
-# 🌱 Future Work
+Add ranking or scoring of pathways
 
--   Add USPTO applications (2001--2016)\
--   More grant years\
--   Integrate PubChemRDF & ChEMBL-RDF\
--   Add reaction conditions\
--   Pathway ranking & cost metrics\
--   Graph visualization (force layout)
-
-------------------------------------------------------------------------
-
-# 🙏 Acknowledgements
-
-USPTO datasets, RDKit, Ontotext GraphDB, React ecosystem
+Add visual graph exploration features
