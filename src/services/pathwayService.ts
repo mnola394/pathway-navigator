@@ -1,4 +1,3 @@
-// src/services/pathwayService.ts
 import { executeSparqlQuery, type SparqlJsonResult } from "./graphdbClient";
 
 const REPOSITORY_ID = "chemkg";
@@ -9,16 +8,10 @@ export interface PathSummary {
   steps: number;
 }
 
-/**
- * Very simple literal escape for SMILES strings (and reaction IDs) used in SPARQL strings.
- * (Not bulletproof for all RDF literal edge cases, but fine for this use.)
- */
+
 const escapeLiteral = (value: string): string =>
   value.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
 
-/* ------------------------------------------------------------------ */
-/*  HIGH-LEVEL PATH EXISTENCE / LENGTH QUERY                          */
-/* ------------------------------------------------------------------ */
 
 export const PATH_FIND_TEMPLATE = (
   startList: string[],
@@ -90,10 +83,7 @@ export interface FindPathsOptions {
   shortestOnly?: boolean;
 }
 
-/**
- * Call GraphDB to find paths between sets of start and target SMILES.
- * Returns one row per reachable (start, target, steps) combination.
- */
+
 export async function findPaths({
   startSmiles,
   targetSmiles,
@@ -132,16 +122,13 @@ export async function findPaths({
   return Array.from(bestByPair.values()).sort((a, b) => a.steps - b.steps);
 }
 
-/* ------------------------------------------------------------------ */
-/*  REACTION DETAILS (PARTICIPANTS + PATENT)                          */
-/* ------------------------------------------------------------------ */
 
 export interface ReactionParticipant {
-  role: string; // hasReactant / hasProduct / hasCatalyst / hasSolvent / hasAgent
+  role: string; 
   smiles?: string | null;
   label?: string | null;
-  patentIri?: string | null; // http://example.org/chemkg/patent/US03930839
-  patentId?: string | null; // US03930839
+  patentIri?: string | null; 
+  patentId?: string | null; 
 }
 
 const REACTION_PARTICIPANTS_QUERY = (reactionId: string) => `
@@ -219,22 +206,17 @@ export const buildMultiSetPathQuery = (
   const startLits = starts.map((s) => `"${escapeLiteral(s)}"`);
   const targetLits = targets.map((s) => `"${escapeLiteral(s)}"`);
 
-  // VALUES { ... } wants space-separated
   const targetValsValues = targetLits.join(" ");
 
-  // IN ( ... ) wants comma-separated
   const startValsIn = startLits.join(", ");
   const targetValsIn = targetLits.join(", ");
 
-  // --------------------------
-  // UNION branches for length 1..maxSteps
-  // --------------------------
+  
   const unionBranches: string[] = [];
 
   for (let L = 1; L <= maxSteps; L++) {
     const lines: string[] = [];
 
-    // First reaction: from a "start" compound
     lines.push(`
       # First reaction (uses a specific start compound in the chain)
       ?rxn1 ck:hasReactant ?startNode ;
@@ -244,18 +226,16 @@ export const buildMultiSetPathQuery = (
     `);
 
     if (L === 1) {
-      // Direct 1-step: startNode -> target
+   
       lines.push(`
         OPTIONAL { ?rxn1 ck:reactionId ?rxn1Id }
         BIND(?rxn1 AS ?rxnLast)
       `);
     } else {
-      // For L >= 2, we have mid nodes
       lines.push(`
         ?mid1 ck:smiles ?mid1Smiles .
       `);
 
-      // Middle segments: mid1 -> mid2 -> ... -> mid{L-1}
       for (let i = 2; i <= L - 1; i++) {
         const prevMid = `?mid${i - 1}`;
         const curMid = `?mid${i}`;
@@ -266,14 +246,12 @@ export const buildMultiSetPathQuery = (
         `);
       }
 
-      // Last reaction: mid{L-1} -> target
       const lastMid = `?mid${L - 1}`;
       lines.push(`
         ?rxn${L} ck:hasReactant ${lastMid} ;
                 ck:hasProduct  ?target .
       `);
 
-      // Optional IDs + bind last reaction
       for (let i = 1; i <= L; i++) {
         lines.push(`OPTIONAL { ?rxn${i} ck:reactionId ?rxn${i}Id }`);
       }
@@ -291,7 +269,6 @@ export const buildMultiSetPathQuery = (
 
   const unionBlock = unionBranches.join("\n");
 
-  // Vars in SELECT: all rxnX / rxnXId up to maxSteps, and all midXSmiles up to maxSteps-1
   const reactionVars = Array.from(
     { length: maxSteps },
     (_, i) => `?rxn${i + 1} ?rxn${i + 1}Id`
@@ -305,9 +282,6 @@ export const buildMultiSetPathQuery = (
         ).join(" ")
       : "";
 
-  // --------------------------
-  // ALL-OF constraints for rxn1 and rxnLast
-  // --------------------------
   const allOfConstraints = `
     # First reaction must use ALL required start SMILES as reactants
     {
@@ -357,11 +331,11 @@ WHERE {
 };
 
 export interface DetailedPath {
-  startSmiles: string[];    // the input set (not per-row)
-  targetSmiles: string;     // concrete endpoint from query
-  intermediates: string[];  // only up to actual path length - 1
+  startSmiles: string[];    
+  targetSmiles: string;     
+  intermediates: string[];  
   reactions: { id: string | null }[];
-  stepCount: number;        // actual length (1..maxSteps)
+  stepCount: number;        
 }
 
 export async function getMultiSetPaths(
@@ -379,13 +353,11 @@ export async function getMultiSetPaths(
 
   const paths: DetailedPath[] = data.results.bindings
     .map((b: any) => {
-      // Prefer bound values; fall back to the first input if missing
       const startSmiles =
         b.startSmiles?.value ?? (starts.length === 1 ? starts[0] : "");
       const targetSmiles =
         b.targetSmiles?.value ?? (targets.length === 1 ? targets[0] : "");
 
-      // 🔹 Detect how many steps this row actually has
       let stepCount = 0;
       for (let i = 1; i <= steps; i++) {
         const rxnVar = b[`rxn${i}`];
@@ -395,12 +367,10 @@ export async function getMultiSetPaths(
         }
       }
 
-      // No reactions bound → ignore this row
       if (stepCount === 0) {
         return null;
       }
 
-      // Collect intermediates: ?mid1Smiles, ?mid2Smiles, ... up to stepCount-1
       const intermediates: string[] = [];
       for (let i = 1; i <= stepCount - 1; i++) {
         const midVar = b[`mid${i}Smiles`];
@@ -409,7 +379,6 @@ export async function getMultiSetPaths(
         }
       }
 
-      // Collect reaction IDs actually present in this row
       const reactions = Array.from({ length: stepCount }, (_, i) => {
         const idx = i + 1;
         const rxnIdBinding = b[`rxn${idx}Id`];

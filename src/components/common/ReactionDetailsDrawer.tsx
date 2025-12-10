@@ -10,13 +10,12 @@ import { Separator } from "@/components/ui/separator";
 import { SmilesBadge } from "./SmilesBadge";
 import { FlaskConical } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
-import {  FileText } from "lucide-react";
+import { FileText } from "lucide-react";
 
 import {
   getReactionParticipants,
   type ReactionParticipant,
-} from "@/services/pathwayService"; // 👈 NOTE: services (plural)
-
+} from "@/services/pathwayService"; 
 interface ReactionDetailsDrawerProps {
   reactionId: string | null;
   open: boolean;
@@ -32,7 +31,6 @@ export function ReactionDetailsDrawer({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch reaction participants from GraphDB whenever the drawer opens for a given ID
   useEffect(() => {
     if (!open || !reactionId) {
       return;
@@ -44,7 +42,7 @@ export function ReactionDetailsDrawer({
 
     getReactionParticipants(reactionId)
       .then((res) => {
-        console.log("ReactionDetailsDrawer participants:", res); // 🔍 debug
+        console.log("ReactionDetailsDrawer participants:", res); 
         setParticipants(res);
       })
       .catch((err) => {
@@ -56,7 +54,6 @@ export function ReactionDetailsDrawer({
       });
   }, [open, reactionId]);
 
-  // Derive patent info from the first binding (all rows share same patent)
   const patentId =
     participants.length > 0 ? participants[0].patentId ?? null : null;
   const patentIri =
@@ -86,30 +83,28 @@ export function ReactionDetailsDrawer({
               </SheetDescription>
 
               {patentId && (
-  <div className="mt-3 flex flex-wrap items-center gap-2">
-    <Badge
-      variant="secondary"
-      className="flex items-center gap-1.5 text-md px-2 py-1 rounded-full"
-    >
-      <FileText className="w-3 h-3" />
-      <span className="uppercase tracking-wide">Patent</span>
-      <span className="font-mono">{patentId}</span>
-    </Badge>
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  <Badge
+                    variant="secondary"
+                    className="flex items-center gap-1.5 text-md px-2 py-1 rounded-full"
+                  >
+                    <FileText className="w-3 h-3" />
+                    <span className="uppercase tracking-wide">Patent</span>
+                    <span className="font-mono">{patentId}</span>
+                  </Badge>
 
-    {patentIri && (
-      <span className="text-[11px] text-muted-foreground break-all">
-        {patentIri}
-      </span>
-    )}
-  </div>
-)}
-
+                  {patentIri && (
+                    <span className="text-[11px] text-muted-foreground break-all">
+                      {patentIri}
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </SheetHeader>
 
         <div className="mt-6 space-y-6">
-          {/* Status */}
           {loading && (
             <p className="text-sm text-muted-foreground">
               Loading reaction details…
@@ -123,7 +118,6 @@ export function ReactionDetailsDrawer({
             </p>
           )}
 
-          {/* Group participants by role */}
           {!loading && !error && participants.length > 0 && (
             <>
               {renderRoleSection("Reactants", "hasReactant", participants)}
@@ -139,7 +133,7 @@ export function ReactionDetailsDrawer({
                   SPARQL used
                 </h4>
                 <pre className="bg-muted rounded-lg p-4 text-xs font-mono text-muted-foreground overflow-x-auto">
-{`PREFIX ck: <http://example.org/chemkg#>
+                  {`PREFIX ck: <http://example.org/chemkg#>
 
 SELECT
   ?role ?cmpSmiles ?cmpLabel
@@ -179,9 +173,7 @@ ORDER BY ?role ?cmpSmiles`}
   );
 }
 
-/**
- * Helper to render a section for a given role from the participants list.
- */
+
 function renderRoleSection(
   title: string,
   roleKey: string,

@@ -32,9 +32,7 @@ export function Analytics() {
         </p>
       </div>
 
-      {/* Main Analytics Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Yield Distribution */}
         <Card>
           <CardHeader>
             <CardTitle className="text-sm font-semibold flex items-center gap-2">
@@ -58,7 +56,6 @@ export function Analytics() {
           </CardContent>
         </Card>
 
-        {/* High-Yield Reactions */}
         <Card>
           <CardHeader>
             <CardTitle className="text-sm font-semibold flex items-center gap-2">
@@ -110,7 +107,6 @@ export function Analytics() {
           </CardContent>
         </Card>
 
-        {/* Most Connected Intermediates */}
         <Card>
           <CardHeader>
             <CardTitle className="text-sm font-semibold flex items-center gap-2">
@@ -148,9 +144,7 @@ export function Analytics() {
         </Card>
       </div>
 
-      {/* Catalyst & Solvent Analytics */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Solvents */}
         <Card>
           <CardHeader>
             <CardTitle className="text-sm font-semibold flex items-center gap-2">
@@ -171,7 +165,6 @@ export function Analytics() {
           </CardContent>
         </Card>
 
-        {/* Catalysts */}
         <Card>
           <CardHeader>
             <CardTitle className="text-sm font-semibold flex items-center gap-2">
@@ -193,7 +186,6 @@ export function Analytics() {
         </Card>
       </div>
 
-      {/* Bridge Compounds */}
       <Card>
         <CardHeader>
           <CardTitle className="text-sm font-semibold flex items-center gap-2">

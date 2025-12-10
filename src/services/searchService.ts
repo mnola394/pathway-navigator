@@ -1,4 +1,3 @@
-// src/services/searchService.ts
 import { executeSparqlQuery, type SparqlJsonResult } from "./graphdbClient";
 
 const REPOSITORY_ID = "chemkg";
@@ -11,115 +10,11 @@ export interface CompoundSearchResult {
   reactionCount: number;
 }
 
-/**
- * Escape " and \ for use inside a SPARQL string literal.
- */
 const escapeLiteral = (value: string): string =>
   value.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
 
-/**
- * Build the scored compound search query.
- */
-// const COMPOUND_SEARCH_QUERY = (term: string, limit = 20): string => {
-//   const escaped = escapeLiteral(term); // we let SPARQL do LCASE()
-
-//   return `
-// PREFIX ck: <http://example.org/chemkg#>
-
-// SELECT
-//   ?compound
-//   ?smiles
-//   ?label
-//   (SUM(?matchScore) AS ?score)
-//   (COUNT(DISTINCT ?rxn) AS ?reactionCount)
-// WHERE {
-//   # your input term (case-insensitive)
-//   BIND(LCASE("${escaped}") AS ?q)
-
-//   ?compound a ck:Compound .
-//   OPTIONAL { ?compound ck:smiles ?smiles . }
-//   OPTIONAL { ?compound ck:label  ?label  . }
-
-//   # attach any reactions / patents involving this compound
-//   OPTIONAL {
-//     ?rxn (ck:hasReactant|ck:hasProduct|ck:hasAgent) ?compound .
-
-//     OPTIONAL { ?rxn ck:reactionSmiles ?rxnSmiles . }
-//     OPTIONAL { ?rxn ck:reactionId     ?rxnId      . }
-
-//     OPTIONAL {
-//       ?rxn ck:documentedIn ?patent .
-//       OPTIONAL { ?patent ck:hasPatentId ?patentId }
-//     }
-//   }
-
-//   # ---------- scoring ----------
-
-//   # SMILES score
-//   BIND(
-//     IF(BOUND(?smiles) && LCASE(?smiles) = ?q,
-//        20,
-//        IF(BOUND(?smiles) && CONTAINS(LCASE(?smiles), ?q),
-//           10,
-//           0
-//        )
-//     )
-//     AS ?scoreSmiles
-//   )
-
-//   # label / common name score
-//   BIND(
-//     IF(BOUND(?label) && CONTAINS(LCASE(?label), ?q),
-//        8,
-//        0
-//     )
-//     AS ?scoreLabel
-//   )
-
-//   # reaction-level matches
-//   BIND(
-//     IF(BOUND(?rxnSmiles) && CONTAINS(LCASE(?rxnSmiles), ?q),
-//        4,
-//        0
-//     )
-//     AS ?scoreRxnSmiles
-//   )
-
-//   BIND(
-//     IF(BOUND(?rxnId) && CONTAINS(LCASE(?rxnId), ?q),
-//        2,
-//        0
-//     )
-//     AS ?scoreRxnId
-//   )
-
-//   # patent ID match
-//   BIND(
-//     IF(BOUND(?patentId) && CONTAINS(LCASE(?patentId), ?q),
-//        1,
-//        0
-//     )
-//     AS ?scorePatent
-//   )
-
-//   # total score for this (compound, reaction) row
-//   BIND(
-//     (?scoreSmiles + ?scoreLabel + ?scoreRxnSmiles + ?scoreRxnId + ?scorePatent)
-//     AS ?matchScore
-//   )
-
-//   # ignore non-matches
-//   FILTER(?matchScore > 0)
-// }
-// GROUP BY ?compound ?smiles ?label
-// HAVING (SUM(?matchScore) > 0)
-// ORDER BY DESC(?score) DESC(?reactionCount)
-// LIMIT ${limit}
-// `;
-// };
 const COMPOUND_SEARCH_QUERY = (term: string, limit = 20): string => {
-  const escaped = escapeLiteral(term); // we let SPARQL do LCASE()
-
+  const escaped = escapeLiteral(term);
   return `
 PREFIX ck: <http://example.org/chemkg#>
 
@@ -130,16 +25,12 @@ SELECT
   ( ?scoreSmiles + ?scoreLabel AS ?score )
   ( COUNT(DISTINCT ?rxn) AS ?reactionCount )
 WHERE {
-  # lowercase user query
   BIND(LCASE("${escaped}") AS ?q)
 
   ?compound a ck:Compound .
   OPTIONAL { ?compound ck:smiles ?smiles . }
   OPTIONAL { ?compound ck:label  ?label  . }
 
-  # ---- scoring only on compound node ----
-
-  # SMILES score
   BIND(
     IF(BOUND(?smiles) && LCASE(?smiles) = ?q,
        20,
@@ -151,7 +42,6 @@ WHERE {
     AS ?scoreSmiles
   )
 
-  # label / common name score
   BIND(
     IF(BOUND(?label) && CONTAINS(LCASE(?label), ?q),
        8,
@@ -160,10 +50,8 @@ WHERE {
     AS ?scoreLabel
   )
 
-  # don't keep compounds with zero score
   FILTER(?scoreSmiles + ?scoreLabel > 0)
 
-  # reaction count (for ranking) – no string matching here
   OPTIONAL {
     ?rxn (ck:hasReactant|ck:hasProduct|ck:hasAgent) ?compound .
   }
@@ -174,17 +62,12 @@ LIMIT ${limit}
 `;
 };
 
-/**
- * High-level API: search compounds by a free-text or SMILES-like term.
- */
 export async function searchCompounds(
   term: string,
   limit = 20
 ): Promise<CompoundSearchResult[]> {
   const trimmed = term.trim();
-  if (!trimmed) {
-    return [];
-  }
+  if (!trimmed) return [];
 
   const query = COMPOUND_SEARCH_QUERY(trimmed, limit);
 

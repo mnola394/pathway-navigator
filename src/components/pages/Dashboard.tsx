@@ -3,12 +3,7 @@ import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatCard } from "@/components/common/StatCard";
 import { BarChart } from "@/components/common/BarChart";
-import {
-  FlaskConical,
-  Atom,
-  FileText,
-  TrendingUp,
-} from "lucide-react";
+import { FlaskConical, Atom, FileText, TrendingUp } from "lucide-react";
 import {
   mockStats,
   mockReactions,
@@ -36,22 +31,18 @@ import {
 } from "@/services/chemkgService";
 
 export function Dashboard() {
-  // Stats
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [loadingStats, setLoadingStats] = useState(true);
   const [statsError, setStatsError] = useState<string | null>(null);
 
-  // Top solvents
   const [topSolvents, setTopSolvents] = useState<TopSolvent[] | null>(null);
   const [loadingSolvents, setLoadingSolvents] = useState(true);
   const [solventError, setSolventError] = useState<string | null>(null);
 
-  // Recent reactions
   const [recentReactions, setRecentReactions] = useState<RecentReaction[] | null>(null);
   const [loadingReactions, setLoadingReactions] = useState(true);
   const [reactionsError, setReactionsError] = useState<string | null>(null);
 
-  // Popular compounds
   const [popularCompounds, setPopularCompounds] = useState<PopularCompound[] | null>(
     null
   );
@@ -114,7 +105,6 @@ export function Dashboard() {
     };
   }, []);
 
-  // Fallbacks to mocks if live data fails
   const effectiveStats: DashboardStats = stats ?? {
     totalReactions: mockStats.totalReactions,
     totalCompounds: mockStats.totalCompounds,
@@ -166,12 +156,11 @@ export function Dashboard() {
         </p>
         {anyError && (
           <p className="text-xs text-red-500 mt-1">
-            {anyError} {/* shows whichever error is set */}
+            {anyError}
           </p>
         )}
       </div>
 
-      {/* Stats */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <StatCard
           title="Total Reactions"
@@ -204,7 +193,8 @@ export function Dashboard() {
           iconColor="text-primary"
         />
       </div>
-<Card>
+
+      <Card>
         <CardHeader>
           <CardTitle className="text-base font-semibold flex items-center gap-2">
             <TrendingUp className="w-4 h-4 text-primary" />
@@ -220,9 +210,8 @@ export function Dashboard() {
           )}
         </CardContent>
       </Card>
-      {/* Tables */}
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Recent Reactions */}
         <Card>
           <CardHeader>
             <CardTitle className="text-base font-semibold flex items-center gap-2">
@@ -235,7 +224,6 @@ export function Dashboard() {
               <TableHeader>
                 <TableRow>
                   <TableHead className="text-xs">Reaction ID</TableHead>
-                  {/* <TableHead className="text-xs">Year</TableHead> */}
                   <TableHead className="text-xs">Reaction SMILES</TableHead>
                 </TableRow>
               </TableHeader>
@@ -245,9 +233,6 @@ export function Dashboard() {
                     <TableCell className="font-mono text-xs">
                       {reaction.reactionId ?? reaction.rxn}
                     </TableCell>
-                    {/* <TableCell className="text-xs text-center">
-                      {reaction.year ?? "—"}
-                    </TableCell> */}
                     <TableCell className="font-mono text-xs max-w-[200px] truncate">
                       {reaction.reactionSmiles || "—"}
                     </TableCell>
@@ -263,7 +248,6 @@ export function Dashboard() {
           </CardContent>
         </Card>
 
-        {/* Popular Compounds */}
         <Card>
           <CardHeader>
             <CardTitle className="text-base font-semibold flex items-center gap-2">
@@ -306,9 +290,6 @@ export function Dashboard() {
           </CardContent>
         </Card>
       </div>
-
-      {/* Analytics Preview */}
-      
     </div>
   );
 }

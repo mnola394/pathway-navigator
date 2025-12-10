@@ -1,9 +1,6 @@
-// src/services/chemkgService.ts
 import { executeSparqlQuery, type SparqlJsonResult } from "./graphdbClient";
 
 const REPOSITORY_ID = "chemkg";
-
-/* ---------- STATS (already have this) ---------- */
 
 export interface DashboardStats {
   totalReactions: number;
@@ -44,10 +41,8 @@ export async function getDashboardStats(): Promise<DashboardStats> {
   };
 }
 
-/* ---------- TOP SOLVENTS BY USAGE ---------- */
-
 export interface TopSolvent {
-  solvent: string;          // IRI
+  solvent: string;
   smiles?: string | null;
   label?: string | null;
   timesUsed: number;
@@ -87,10 +82,8 @@ export async function getTopSolvents(): Promise<TopSolvent[]> {
   }));
 }
 
-/* ---------- RECENT REACTIONS ---------- */
-
 export interface RecentReaction {
-  rxn: string;                 // IRI
+  rxn: string;
   reactionId?: string | null;
   year?: number | null;
   reactionSmiles?: string | null;
@@ -130,10 +123,8 @@ export async function getRecentReactions(): Promise<RecentReaction[]> {
   }));
 }
 
-/* ---------- POPULAR COMPOUNDS ACROSS ANY ROLE ---------- */
-
 export interface PopularCompound {
-  compound: string;           // IRI
+  compound: string;
   smiles?: string | null;
   label?: string | null;
   reactionsInvolved: number;

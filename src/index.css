@@ -146,18 +146,17 @@
     @apply font-mono text-sm bg-muted px-2 py-0.5 rounded;
   }
 }
-/* ===== Scrollbar Themed to bg-card / muted tokens ===== */
 
 .reaction-scroll::-webkit-scrollbar {
   width: 8px;
 }
 
 .reaction-scroll::-webkit-scrollbar-track {
-  background: hsl(var(--card)); /* matches bg-card */
+  background: hsl(var(--card)); 
 }
 
 .reaction-scroll::-webkit-scrollbar-thumb {
-  background: hsl(var(--muted)); /* subtle thumb */
+  background: hsl(var(--muted)); 
   border-radius: 8px;
 }
 
@@ -165,7 +164,6 @@
   background: hsl(var(--muted-foreground));
 }
 
-/* Firefox */
 .reaction-scroll {
   scrollbar-width: thin;
   scrollbar-color: hsl(var(--muted)) hsl(var(--card));

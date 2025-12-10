@@ -1,25 +1,16 @@
-// src/services/compoundRoleService.ts
 import { executeSparqlQuery, type SparqlJsonResult } from "./graphdbClient";
 
 const REPOSITORY_ID = "chemkg";
 
-// --- helpers ----------------------------------------------------
-
-/** Escape " and backslash for use in SPARQL string literals. */
 function escapeLiteral(value: string): string {
   return value.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
 }
-
-// --- types ------------------------------------------------------
 
 export interface CompoundRoleStats {
   compoundIri: string;
   smiles: string | null;
   label: string | null;
-
-  /** number of DISTINCT reactions where it appears in any of the 5 roles */
   totalRoles: number;
-
   asReactant: number;
   asProduct: number;
   asSolvent: number;
@@ -28,17 +19,11 @@ export interface CompoundRoleStats {
 }
 
 export interface CompoundRoleReaction {
-  /** "hasReactant", "hasProduct", "hasSolvent", "hasCatalyst", "hasAgent" */
   role: string;
   reactionIri: string;
   reactionId: string | null;
 }
 
-// --- query builders: by IRI (preferred) -------------------------
-
-/**
- * Stats query: counts per role + total, binding the given compound IRI.
- */
 function buildRoleStatsQueryByIri(compoundIri: string): string {
   return `
 PREFIX ck: <http://example.org/chemkg#>
@@ -54,13 +39,11 @@ SELECT
   (SUM(?isCatalyst) AS ?asCatalyst)
   (SUM(?isAgent)    AS ?asAgent)
 WHERE {
-  # pick the compound by IRI
   BIND(<${compoundIri}> AS ?compound)
 
   OPTIONAL { ?compound ck:smiles ?smiles . }
   OPTIONAL { ?compound ck:label  ?label  . }
 
-  # any reaction where it appears in *any* role
   ?rxn ?prop ?compound .
 
   VALUES ?prop {
@@ -71,7 +54,6 @@ WHERE {
     ck:hasAgent
   }
 
-  # flags for each role
   BIND(IF(?prop = ck:hasReactant, 1, 0) AS ?isReactant)
   BIND(IF(?prop = ck:hasProduct,  1, 0) AS ?isProduct)
   BIND(IF(?prop = ck:hasSolvent,  1, 0) AS ?isSolvent)
@@ -82,9 +64,6 @@ GROUP BY ?compound ?smiles ?label
 `;
 }
 
-/**
- * Reaction list query: list of reactions per role for a compound IRI.
- */
 function buildRoleReactionsQueryByIri(compoundIri: string): string {
   return `
 PREFIX ck: <http://example.org/chemkg#>
@@ -94,7 +73,6 @@ SELECT DISTINCT
   ?rxn
   ?reactionId
 WHERE {
-  # pick the compound by IRI
   BIND(<${compoundIri}> AS ?compound)
 
   ?rxn ?prop ?compound .
@@ -116,8 +94,6 @@ LIMIT 200
 `;
 }
 
-// --- optional: query builders by SMILES (for quick testing) -----
-
 function buildRoleStatsQueryBySmiles(smiles: string): string {
   const lit = escapeLiteral(smiles);
   return `
@@ -134,7 +110,6 @@ SELECT
   (SUM(?isCatalyst) AS ?asCatalyst)
   (SUM(?isAgent)    AS ?asAgent)
 WHERE {
-  # pick the compound by SMILES
   ?compound ck:smiles "${lit}" .
   OPTIONAL { ?compound ck:smiles ?smiles . }
   OPTIONAL { ?compound ck:label  ?label  . }
@@ -190,8 +165,6 @@ LIMIT 200
 `;
 }
 
-// --- public API: by IRI (recommended) ---------------------------
-
 export async function getCompoundRoleStatsByIri(
   compoundIri: string
 ): Promise<CompoundRoleStats | null> {
@@ -240,8 +213,6 @@ export async function getCompoundRoleReactionsByIri(
     reactionId: b.reactionId?.value ?? null,
   }));
 }
-
-// --- optional API: by SMILES (useful from a quick input) --------
 
 export async function getCompoundRoleStatsBySmiles(
   smiles: string

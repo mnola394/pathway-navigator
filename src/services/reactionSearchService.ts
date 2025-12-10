@@ -1,4 +1,3 @@
-// src/services/reactionSearchService.ts
 import { executeSparqlQuery, type SparqlJsonResult } from "./graphdbClient";
 
 const REPOSITORY_ID = "chemkg";
@@ -7,11 +6,11 @@ const escapeLiteral = (value: string): string =>
   value.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
 
 export interface ReactionSearchFilters {
-  text?: string;                 // free-text query (reaction ID, SMILES, labels, patent ID…)
-  reactantSmiles?: string;       // only reactions where this SMILES is a reactant
-  productSmiles?: string;        // only reactions where this SMILES is a product
-  requireCatalyst?: boolean;     // true = must have catalyst, false = must NOT have catalyst, undefined = ignore
-  requireSolvent?: boolean;      // same as above but for solvent
+  text?: string;
+  reactantSmiles?: string;
+  productSmiles?: string;
+  requireCatalyst?: boolean;
+  requireSolvent?: boolean;
   limit?: number;
   offset?: number;
 }
@@ -21,13 +20,10 @@ export interface ReactionSearchResult {
   reactionId: string | null;
   reactionSmiles: string | null;
   patentId: string | null;
-  reactantSmiles: string[];   // from GROUP_CONCAT
-  productSmiles: string[];    // from GROUP_CONCAT
+  reactantSmiles: string[];
+  productSmiles: string[];
 }
 
-/**
- * Build the SPARQL query string for reaction search.
- */
 export function buildReactionSearchQuery(options: ReactionSearchFilters): string {
   const {
     text,
@@ -39,13 +35,11 @@ export function buildReactionSearchQuery(options: ReactionSearchFilters): string
     offset = 0,
   } = options;
 
-  // free-text term (empty string disables filter)
   const q =
     text && text.trim().length > 0
       ? `"${escapeLiteral(text.trim().toLowerCase())}"`
       : '""';
 
-  // optional reactant / product filters
   let reactantFilter = "";
   if (reactantSmiles && reactantSmiles.trim().length > 0) {
     const lit = `"${escapeLiteral(reactantSmiles.trim())}"`;
@@ -68,7 +62,6 @@ export function buildReactionSearchQuery(options: ReactionSearchFilters): string
     `;
   }
 
-  // catalyst toggle
   let catalystFilter = "";
   if (requireCatalyst === true) {
     catalystFilter = `FILTER EXISTS { ?rxn ck:hasCatalyst ?cat . }`;
@@ -76,7 +69,6 @@ export function buildReactionSearchQuery(options: ReactionSearchFilters): string
     catalystFilter = `FILTER NOT EXISTS { ?rxn ck:hasCatalyst ?cat . }`;
   }
 
-  // solvent toggle
   let solventFilter = "";
   if (requireSolvent === true) {
     solventFilter = `FILTER EXISTS { ?rxn ck:hasSolvent ?solv . }`;
@@ -104,7 +96,6 @@ WHERE {
     OPTIONAL { ?patent ck:hasPatentId ?patentId . }
   }
 
-  # --- reactants / products ---
   OPTIONAL {
     ?rxn ck:hasReactant ?r .
     OPTIONAL { ?r ck:smiles ?rSmiles . }
@@ -117,8 +108,7 @@ WHERE {
     OPTIONAL { ?p ck:label  ?pLabel  . }
   }
 
-  # --- free-text search term (empty string disables) ---
-  BIND( ${q} AS ?q )
+  BIND(${q} AS ?q)
 
   FILTER(
       ?q = "" ||
@@ -144,9 +134,6 @@ OFFSET ${offset}
 `;
 }
 
-/**
- * Execute reaction search and parse results into a TS-friendly shape.
- */
 export async function searchReactions(
   options: ReactionSearchFilters
 ): Promise<ReactionSearchResult[]> {

@@ -1,4 +1,3 @@
-// src/components/CompoundExplorer.tsx
 import { useEffect, useState } from "react";
 import { Atom, Search } from "lucide-react";
 
@@ -31,13 +30,11 @@ import {
 } from "@/services/compoundRoleService";
 
 export function CompoundExplorer() {
-  // --- SMILES search / typeahead state ----------------------
-  const [searchValue, setSearchValue] = useState(""); // selected SMILES/text
+  const [searchValue, setSearchValue] = useState("");
   const [typeaheadTerm, setTypeaheadTerm] = useState("");
   const [suggestions, setSuggestions] = useState<CompoundSearchResult[]>([]);
   const [searchLoading, setSearchLoading] = useState(false);
 
-  // --- results state ----------------------------------------
   const [stats, setStats] = useState<CompoundRoleStats | null>(null);
   const [roleReactions, setRoleReactions] = useState<CompoundRoleReaction[]>(
     []
@@ -45,7 +42,6 @@ export function CompoundExplorer() {
   const [loadingDetails, setLoadingDetails] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // --- reaction drawer state --------------------------------
   const [selectedReactionId, setSelectedReactionId] = useState<string | null>(
     null
   );
@@ -57,7 +53,6 @@ export function CompoundExplorer() {
     setDrawerOpen(true);
   };
 
-  // -------- typeahead: searchCompounds on typeaheadTerm -----
   useEffect(() => {
     const q = typeaheadTerm.trim();
     if (q.length < 2) {
@@ -94,7 +89,6 @@ export function CompoundExplorer() {
     setSuggestions([]);
   };
 
-  // -------- main “Search” action: fetch stats + reactions ----
   const handleSearch = async () => {
     const q = searchValue.trim();
     if (!q) {
@@ -125,20 +119,12 @@ export function CompoundExplorer() {
     }
   };
 
-  // Optionally: auto-run search if you want initial demo value
-  // useEffect(() => {
-  //   setSearchValue("BrCCO");
-  //   setTypeaheadTerm("BrCCO");
-  //   handleSearch();
-  // }, []);
-
   const totalReactions =
     stats?.totalRoles ??
     new Set(roleReactions.map((r) => r.reactionIri)).size;
 
   return (
     <div className="space-y-6">
-      {/* Header */}
       <div>
         <h1 className="text-2xl font-bold text-foreground">
           Compound Explorer
@@ -149,7 +135,6 @@ export function CompoundExplorer() {
         </p>
       </div>
 
-      {/* Search Bar */}
       <Card>
         <CardContent className="pt-6">
           <div className="flex flex-wrap items-end gap-4">
@@ -173,14 +158,12 @@ export function CompoundExplorer() {
                     }
                   }}
                   onBlur={() => {
-                    // tiny delay so click on suggestion still works
                     setTimeout(() => {
                       setSuggestions([]);
                     }, 150);
                   }}
                 />
 
-                {/* Suggestions dropdown */}
                 {typeaheadTerm.trim().length >= 2 && suggestions.length > 0 && (
                   <div className="absolute z-20 mt-1 w-full rounded-md border bg-popover shadow-md max-h-56 overflow-y-auto text-xs">
                     {searchLoading && (
@@ -234,7 +217,6 @@ export function CompoundExplorer() {
         </CardContent>
       </Card>
 
-      {/* Role Stats */}
       <Card>
         <CardHeader>
           <CardTitle className="text-base font-semibold flex items-center gap-2">
@@ -314,7 +296,6 @@ export function CompoundExplorer() {
         </CardContent>
       </Card>
 
-      {/* Role Reactions Table */}
       <Card>
         <CardHeader>
           <CardTitle className="text-base font-semibold flex items-center gap-2">
@@ -370,7 +351,6 @@ export function CompoundExplorer() {
         </CardContent>
       </Card>
 
-      {/* Reaction details drawer (re-using existing component) */}
       <ReactionDetailsDrawer
         reactionId={selectedReactionId}
         open={drawerOpen}

@@ -1,4 +1,3 @@
-// src/components/PathwayExplorer.tsx
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -48,16 +47,13 @@ export function PathwayExplorer() {
   const [selectedReaction, setSelectedReaction] = useState<string | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
 
-  // Multiple start/target compounds as arrays of strings
   const [startCompounds, setStartCompounds] = useState<string[]>([""]);
   const [targetCompounds, setTargetCompounds] = useState<string[]>([""]);
 
-  // GraphDB detailed path results
   const [paths, setPaths] = useState<DetailedPath[] | null>(null);
   const [loadingPaths, setLoadingPaths] = useState(false);
   const [pathsError, setPathsError] = useState<string | null>(null);
 
-  // ---- Compound search state (shared for start/target) ----
   const [activeField, setActiveField] = useState<ActiveField>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [searchResults, setSearchResults] = useState<CompoundSearchResult[]>(
@@ -65,7 +61,6 @@ export function PathwayExplorer() {
   );
   const [searchLoading, setSearchLoading] = useState(false);
 
-  // Run search when searchTerm changes
   useEffect(() => {
     if (!searchTerm.trim() || !activeField) {
       setSearchResults([]);
@@ -156,7 +151,6 @@ export function PathwayExplorer() {
     );
   };
 
-  // ---- Input change handlers now also update search state ----
   const handleStartChange = (index: number, value: string) => {
     setStartCompounds((prev) => {
       const next = [...prev];
@@ -205,7 +199,6 @@ export function PathwayExplorer() {
     }
   };
 
-  // When user picks a suggestion from dropdown
   const handlePickSuggestion = (
     field: ActiveField,
     result: CompoundSearchResult
@@ -246,7 +239,6 @@ export function PathwayExplorer() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Search Panel */}
         <Card className="lg:col-span-1">
           <CardHeader>
             <CardTitle className="text-base font-semibold flex items-center gap-2">
@@ -255,7 +247,6 @@ export function PathwayExplorer() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
-            {/* Start Compounds */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label className="text-sm font-medium">
@@ -289,7 +280,6 @@ export function PathwayExplorer() {
                           setSearchTerm(value);
                         }}
                         onBlur={() => {
-                          // small timeout so click on suggestion still works
                           setTimeout(() => {
                             if (
                               activeField?.kind === "start" &&
@@ -363,7 +353,6 @@ export function PathwayExplorer() {
               </p>
             </div>
 
-            {/* Target Compounds */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label className="text-sm font-medium">
@@ -471,7 +460,6 @@ export function PathwayExplorer() {
               </p>
             </div>
 
-            {/* Exact Steps */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <Label className="text-sm font-medium">Max Steps</Label>
@@ -492,25 +480,11 @@ export function PathwayExplorer() {
               </p>
             </div>
 
-            {/* Shortest Path Toggle (optional UI, not used in multi-set query) */}
-            {/* <div className="flex items-center justify-between">
-              <Label htmlFor="shortest" className="text-sm font-medium">
-                Only show shortest paths
-              </Label>
-              <Switch
-                id="shortest"
-                checked={shortestOnly}
-                onCheckedChange={setShortestOnly}
-              />
-            </div> */}
-
-            {/* Search Button */}
             <Button onClick={handleSearch} className="w-full">
               <Route className="w-4 h-4 mr-2" />
               Find Pathways
             </Button>
 
-            {/* Info Note */}
             <div className="flex items-start gap-2 p-3 bg-muted rounded-lg">
               <Info className="w-4 h-4 text-muted-foreground mt-0.5 shrink-0" />
               <p className="text-xs text-muted-foreground">
@@ -522,7 +496,6 @@ export function PathwayExplorer() {
           </CardContent>
         </Card>
 
-        {/* Results Panel */}
         <Card className="lg:col-span-2">
           <Tabs defaultValue="pathways" className="h-full">
             <CardHeader className="pb-0">
@@ -564,15 +537,10 @@ export function PathwayExplorer() {
                       <>
                         <p className="text-sm text-muted-foreground">
                           Found {paths.length} detailed path
-                          {paths.length === 1 ? "" : "s"}
-                          {/* with exactly{" "}
-                          {maxSteps[0]} step
-                          {maxSteps[0] === 1 ? "" : "s"} */}
-                          .
+                          {paths.length === 1 ? "" : "s"}.
                         </p>
                         <div className="space-y-2">
                           {paths.map((p, index) => {
-                            // startSmiles may be string or string[]
                             const startSmilesValue = Array.isArray(
                               p.startSmiles
                             )
@@ -582,7 +550,6 @@ export function PathwayExplorer() {
                             const totalSteps =
                               p.stepCount ?? p.reactions.length;
 
-                            // Build explicit step list: from, to, reactionId
                             const steps = Array.from(
                               { length: totalSteps },
                               (_, i) => {
@@ -602,7 +569,6 @@ export function PathwayExplorer() {
                               }
                             );
 
-                            // Optional compact chain string for quick glance
                             const chain = [
                               startSmilesValue,
                               ...p.intermediates.filter(
@@ -616,7 +582,6 @@ export function PathwayExplorer() {
                                 key={`${startSmilesValue}-${p.targetSmiles}-${index}`}
                               >
                                 <CardContent className="py-3 space-y-3">
-                                  {/* Header + compact chain */}
                                   <div className="space-y-1">
                                     <p className="text-xs text-muted-foreground">
                                       Path {index + 1} ({totalSteps} step
@@ -627,7 +592,6 @@ export function PathwayExplorer() {
                                     </p>
                                   </div>
 
-                                  {/* Explicit per-step breakdown */}
                                   <div className="space-y-2">
                                     {steps.map((step, stepIndex) => (
                                       <div

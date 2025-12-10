@@ -44,12 +44,7 @@ export function Sidebar() {
         })}
       </nav>
 
-      {/* <div className="p-4 border-t border-sidebar-border">
-        <div className="text-xs text-sidebar-muted">
-          <p>Mock Data Mode</p>
-          <p className="mt-1">v1.0.0</p>
-        </div>
-      </div> */}
+      
     </aside>
   );
 }

@@ -1,4 +1,3 @@
-// src/components/ReactionExplorer.tsx
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -37,19 +36,16 @@ export function ReactionExplorer() {
   const [selectedReaction, setSelectedReaction] = useState<string | null>(null);
   const [drawerOpen, setDrawerOpen] = useState(false);
 
-  // filter state
   const [textQuery, setTextQuery] = useState("");
   const [reactantSmiles, setReactantSmiles] = useState("");
   const [productSmiles, setProductSmiles] = useState("");
   const [catalystFilter, setCatalystFilter] = useState<TriState>("any");
   const [solventFilter, setSolventFilter] = useState<TriState>("any");
 
-  // results state
   const [results, setResults] = useState<ReactionSearchResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // --- typeahead state for reactant / product filters ---
   const [reactantSearchTerm, setReactantSearchTerm] = useState("");
   const [reactantSuggestions, setReactantSuggestions] = useState<
     CompoundSearchResult[]
@@ -103,13 +99,10 @@ export function ReactionExplorer() {
     }
   };
 
-  // initial load
   useEffect(() => {
     applyFilters();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // ------- reactant filter typeahead -------
   useEffect(() => {
     const q = reactantSearchTerm.trim();
     if (q.length < 2) {
@@ -146,7 +139,6 @@ export function ReactionExplorer() {
     setReactantSuggestions([]);
   };
 
-  // ------- product filter typeahead -------
   useEffect(() => {
     const q = productSearchTerm.trim();
     if (q.length < 2) {
@@ -192,11 +184,9 @@ export function ReactionExplorer() {
         </p>
       </div>
 
-      {/* Filter Bar */}
       <Card>
         <CardContent className="pt-6">
           <div className="flex flex-wrap items-end gap-4">
-            {/* Free-text search */}
             <div className="flex-1 min-w-[220px]">
               <label className="text-sm font-medium text-foreground mb-2 block">
                 Search (ID / SMILES / label / patent)
@@ -212,7 +202,6 @@ export function ReactionExplorer() {
               </div>
             </div>
 
-            {/* Reactant filter with typeahead */}
             <div className="w-[260px]">
               <label className="text-sm font-medium text-foreground mb-2 block">
                 Reactant contains
@@ -226,7 +215,6 @@ export function ReactionExplorer() {
                     setReactantSearchTerm(e.target.value);
                   }}
                   onBlur={() => {
-                    // tiny delay so clicks on suggestions still register
                     setTimeout(() => {
                       setReactantSuggestions([]);
                     }, 150);
@@ -269,14 +257,13 @@ export function ReactionExplorer() {
               </div>
             </div>
 
-            {/* Product filter with typeahead */}
             <div className="w-[260px]">
               <label className="text-sm font-medium text-foreground mb-2 block">
                 Product contains
               </label>
               <div className="relative">
                 <Input
-                  placeholder='SMILES / name'
+                  placeholder="SMILES / name"
                   value={productSmiles}
                   onChange={(e) => {
                     setProductSmiles(e.target.value);
@@ -325,7 +312,6 @@ export function ReactionExplorer() {
               </div>
             </div>
 
-            {/* Catalyst tri-state */}
             <div className="w-[160px]">
               <label className="text-sm font-medium text-foreground mb-2 block">
                 Catalyst
@@ -345,7 +331,6 @@ export function ReactionExplorer() {
               </Select>
             </div>
 
-            {/* Solvent tri-state */}
             <div className="w-[160px]">
               <label className="text-sm font-medium text-foreground mb-2 block">
                 Solvent
@@ -373,7 +358,6 @@ export function ReactionExplorer() {
         </CardContent>
       </Card>
 
-      {/* Reactions Table */}
       <Card>
         <CardHeader>
           <CardTitle className="text-base font-semibold flex items-center gap-2">

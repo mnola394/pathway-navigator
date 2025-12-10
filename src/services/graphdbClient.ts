@@ -1,6 +1,4 @@
-// src/services/graphdbClient.ts
 
-// Go through Vite proxy in dev
 const GRAPHDB_BASE_URL = "/graphdb";
 
 interface ExecuteSparqlOptions {

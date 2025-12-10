@@ -23,7 +23,6 @@ export function About() {
         </p>
       </div>
 
-      {/* What is Pathway Explorer */}
       <Card>
         <CardHeader>
           <CardTitle className="text-base font-semibold flex items-center gap-2">
@@ -89,7 +88,6 @@ export function About() {
         </CardContent>
       </Card>
 
-      {/* How the KG is Built */}
       <Card>
         <CardHeader>
           <CardTitle className="text-base font-semibold flex items-center gap-2">
@@ -176,7 +174,6 @@ export function About() {
         </CardContent>
       </Card>
 
-      {/* Future Work */}
       <Card>
         <CardHeader>
           <CardTitle className="text-base font-semibold flex items-center gap-2">
@@ -252,7 +249,6 @@ export function About() {
         </CardContent>
       </Card>
 
-      {/* Tech Stack */}
       <Card>
         <CardHeader>
           <CardTitle className="text-base font-semibold flex items-center gap-2">
